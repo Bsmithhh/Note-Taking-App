@@ -162,6 +162,30 @@
                 </form>
             </div>
         </div>
+
+        <!-- Category Delete Confirmation Modal -->
+        <div id="delete-category-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Delete Category</h3>
+                    <button class="close-modal" type="button">✕</button>
+                </div>
+                <div class="delete-category-content">
+                    <p id="delete-category-message">Are you sure you want to delete this category?</p>
+                    <div class="delete-category-warning">
+                        <p><strong>Warning:</strong> This action will:</p>
+                        <ul>
+                            <li>Remove the category from all notes that use it</li>
+                            <li>Cannot be undone</li>
+                        </ul>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-delete-category" class="btn-secondary">Cancel</button>
+                        <button type="button" id="confirm-delete-category" class="btn-danger">Delete Category</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- JavaScript Modules -->
