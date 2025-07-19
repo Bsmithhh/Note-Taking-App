@@ -124,6 +124,17 @@ import { generateId, getNoteById, getAllNotes, assignCategory, getNotesByCategor
         console.log("This category does not exist")
         return false
     } else{
+        // Remove category from all notes that use it
+        const notes = getAllNotes();
+        const updatedNotes = notes.map(note => {
+            if (note.category === category.name) {
+                return { ...note, category: '' };
+            }
+            return note;
+        });
+        localStorage.setItem('notes', JSON.stringify(updatedNotes));
+        
+        // Delete the category
         const updatedCategories = categories.filter(cat => cat.id !== categoryId);
         localStorage.setItem('categories', JSON.stringify(updatedCategories));
         console.log("Category deleted successfully");
