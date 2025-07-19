@@ -36,6 +36,7 @@ class BearNotesApp {
         this.currentCategory = 'all';
         this.searchQuery = '';
         this.isEditing = false;
+        this.categoryToDelete = null;
         
         this.initializeApp();
         this.bindEvents();
@@ -141,10 +142,55 @@ class BearNotesApp {
             });
         }
 
+        // Delete category modal events
+        const deleteCategoryModal = document.getElementById('delete-category-modal');
+        const cancelDeleteCategoryBtn = document.getElementById('cancel-delete-category');
+        const confirmDeleteCategoryBtn = document.getElementById('confirm-delete-category');
+        const closeDeleteCategoryModalBtn = document.querySelector('#delete-category-modal .close-modal');
+
+        if (cancelDeleteCategoryBtn) {
+            cancelDeleteCategoryBtn.addEventListener('click', () => {
+                this.hideDeleteCategoryModal();
+            });
+        }
+
+        if (confirmDeleteCategoryBtn) {
+            confirmDeleteCategoryBtn.addEventListener('click', () => {
+                this.handleDeleteCategory();
+            });
+        }
+
+        if (closeDeleteCategoryModalBtn) {
+            closeDeleteCategoryModalBtn.addEventListener('click', () => {
+                this.hideDeleteCategoryModal();
+            });
+        }
+
+        // Close delete category modal when clicking outside
+        if (deleteCategoryModal) {
+            deleteCategoryModal.addEventListener('click', (e) => {
+                if (e.target === deleteCategoryModal) {
+                    this.hideDeleteCategoryModal();
+                }
+            });
+        }
+
         // Category clicks
         document.addEventListener('click', (e) => {
             if (e.target.closest('.category-item')) {
-                const categoryName = e.target.closest('.category-item').dataset.category;
+                const categoryItem = e.target.closest('.category-item');
+                
+                // Handle delete button clicks
+                if (e.target.classList.contains('delete-category-btn')) {
+                    e.stopPropagation(); // Prevent category selection
+                    const categoryId = categoryItem.dataset.categoryId;
+                    const categoryName = categoryItem.dataset.category;
+                    this.showDeleteCategoryModal(categoryId, categoryName);
+                    return;
+                }
+                
+                // Handle regular category clicks
+                const categoryName = categoryItem.dataset.category;
                 this.filterByCategory(categoryName);
             }
             
@@ -195,10 +241,12 @@ class BearNotesApp {
                 const categoryItem = document.createElement('div');
                 categoryItem.className = 'category-item';
                 categoryItem.dataset.category = category.name;
+                categoryItem.dataset.categoryId = category.id;
                 categoryItem.innerHTML = `
                     <span class="tag-indicator" style="background-color: ${category.color};"></span>
                     <span>${category.name}</span>
                     <span class="count">${categoryNotes.length}</span>
+                    <button class="delete-category-btn" title="Delete category">🗑️</button>
                 `;
                 dynamicCategoriesContainer.appendChild(categoryItem);
             });
@@ -616,6 +664,45 @@ class BearNotesApp {
             } else {
                 alert('Failed to delete note. Please try again.');
             }
+        }
+    }
+
+    showDeleteCategoryModal(categoryId, categoryName) {
+        this.categoryToDelete = { id: categoryId, name: categoryName };
+        const modal = document.getElementById('delete-category-modal');
+        const message = document.getElementById('delete-category-message');
+        
+        if (modal && message) {
+            message.textContent = `Are you sure you want to delete the category "${categoryName}"?`;
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideDeleteCategoryModal() {
+        const modal = document.getElementById('delete-category-modal');
+        if (modal) {
+            modal.style.display = 'none';
+            this.categoryToDelete = null;
+        }
+    }
+
+    handleDeleteCategory() {
+        if (!this.categoryToDelete) return;
+
+        const { id, name } = this.categoryToDelete;
+        
+        if (deleteCategory(id)) {
+            // If we're currently viewing the deleted category, switch to 'all'
+            if (this.currentCategory === name) {
+                this.currentCategory = 'all';
+            }
+            
+            this.hideDeleteCategoryModal();
+            this.renderSidebar();
+            this.renderNotesList();
+            this.renderMainContent();
+        } else {
+            alert('Failed to delete category. Please try again.');
         }
     }
 }
