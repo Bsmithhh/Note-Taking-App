@@ -141,14 +141,32 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 🔮 Future Features
 
-- [ ] Rich text formatting
-- [ ] Markdown support
-- [ ] Export/import functionality
+### **Phase 1: Advanced Search (In Progress)**
+- [ ] Full-text search with relevance scoring
+- [ ] Search by date ranges and categories
+- [ ] Search history and saved searches
+- [ ] Keyboard shortcuts (Ctrl+K for quick search)
+- [ ] Search term highlighting in results
+
+### **Phase 2: Rich Text Editing & Markdown**
+- [ ] Markdown preview mode
+- [ ] Basic formatting toolbar (bold, italic, lists, links)
+- [ ] Code syntax highlighting
+- [ ] Image paste/upload functionality
+- [ ] HTML to Markdown conversion
+
+### **Phase 3: Data Export & Backup**
+- [ ] Export notes to PDF, Markdown, or JSON
+- [ ] Automatic backup to local storage
+- [ ] Import functionality for migration
+- [ ] Data statistics (word counts, note trends)
+- [ ] Activity reports and analytics
+
+### **Additional Features**
 - [ ] Cloud synchronization
 - [ ] Tags system
 - [ ] Note templates
 - [ ] Dark mode
-- [ ] Keyboard shortcuts
 - [ ] Note sharing
 - [ ] Mobile app
 

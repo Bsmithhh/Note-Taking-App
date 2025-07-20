@@ -10,6 +10,7 @@ import { getAllNotes } from './note.js';
  * @returns {Array} - Array of matching notes
  */
  function searchNotesByTitle(query, notes) {
+    notes = notes || [];
     return notes.filter(function(note){
         return note.title.toLowerCase().includes(query.toLowerCase())
     })
@@ -22,6 +23,7 @@ import { getAllNotes } from './note.js';
  * @returns {Array} - Array of matching notes
  */
  function searchNotesByContent(query, notes) {
+    notes = notes || [];
     return notes.filter(function(note){
         return note.content.toLowerCase().includes(query.toLowerCase())
     })
@@ -34,10 +36,64 @@ import { getAllNotes } from './note.js';
  * @param {string} criteria.category - Category filter
  * @param {Date} criteria.dateFrom - Start date
  * @param {Date} criteria.dateTo - End date
+ * @param {string} criteria.sortBy - Sort field ('relevance', 'date', 'title')
+ * @param {string} criteria.sortOrder - Sort order ('asc', 'desc')
  * @param {Array} notes - Array of notes to search through
- * @returns {Array} - Array of matching notes
+ * @returns {Array} - Array of matching notes with relevance scores
  */
-// function advancedSearch(criteria, notes) { }
+function advancedSearch(criteria, notes = null) {
+    let results = fullTextSearch(criteria.query, notes);
+    if (criteria.category) {
+        results = results.filter(note => note.category === criteria.category);
+    }
+    if (criteria.dateFrom) {
+        results = results.filter(note => note.timestamp >= criteria.dateFrom);
+    }
+    if (criteria.dateTo) {
+        results = results.filter(note => note.timestamp <= criteria.dateTo);
+    }
+    if (criteria.sortBy === 'relevance') {
+        results = sortByRelevance(results, criteria.query);
+    } else if (criteria.sortBy === 'date') {
+        results = sortByDate(results, criteria.sortOrder);
+    } else if (criteria.sortBy === 'title') {
+        results = sortByTitle(results, criteria.sortOrder);
+    }
+    return results;
+}
+
+/**
+ * P1 - Search by date range
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @param {Array} notes - Notes to search (optional, defaults to all)
+ * @returns {Array} - Notes created within date range
+ */
+function searchByDateRange(startDate, endDate, notes = null) {
+    notes = notes || getAllNotes();
+    return notes.filter(function(note){
+        return note.timestamp >= startDate && note.timestamp <= endDate;
+    })
+}
+
+/**
+ * P1 - Full-text search with relevance scoring
+ * @param {string} query - Search query
+ * @param {Array} notes - Notes to search (optional, defaults to all)
+ * @returns {Array} - Notes with relevance scores
+ */
+function fullTextSearch(query, notes = null) {
+    notes = notes || getAllNotes();
+    const results = [];
+    notes.forEach(note => {
+        const score = calculateRelevanceScore(note, query);
+        if (score > 0) {
+            results.push({ ...note, score });
+        }
+    });
+    return results.sort((a, b) => b.score - a.score);
+}
+    
 
 /**
  * P1 - Highlight search terms in search results
@@ -45,7 +101,15 @@ import { getAllNotes } from './note.js';
  * @param {string} query - Search query to highlight
  * @returns {string} - HTML string with highlighted terms
  */
-// function highlightSearchTerms(text, query) { }
+function highlightSearchTerms(text, query) {
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    let highlightedText = text;
+    words.forEach(word => {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        highlightedText = highlightedText.replace(regex, match => `<mark>${match}</mark>`);
+    });
+    return highlightedText;
+}
 
 /**
  * P1 - Sort search results by relevance
@@ -54,14 +118,9 @@ import { getAllNotes } from './note.js';
  * @returns {Array} - Sorted array of results
  */
 function sortByRelevance(results, query) { 
-    const notes = getAllNotes();
-    let filteredNotes = searchNotes(query, notes);
-
-    filteredNotes.sort(function(a, b) {
-        return new Date(b.timestamp) - new Date(a.timestamp);
-    });
-
-    return filteredNotes;
+    // Results already have relevance scores from fullTextSearch
+    // Just return them sorted by score (they should already be sorted)
+    return results;
 }
 
 /**
@@ -88,10 +147,12 @@ function sortByRelevance(results, query) {
  */
  function sortByTitle(results, order = 'asc') { 
     return results.sort(function(a, b) {
+        const titleA = (a.title || '').toLowerCase();
+        const titleB = (b.title || '').toLowerCase();
         if (order === 'asc') {
-            return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+            return titleA.localeCompare(titleB);
         } else {
-            return b.title.toLowerCase().localeCompare(a.title.toLowerCase());
+            return titleB.localeCompare(titleA);
         }
     });
  }
@@ -108,27 +169,78 @@ function sortByRelevance(results, query) {
     })
   }
 
-/**
- * P1 - Clear search results and show all notes
- */
-// function clearSearch() { }
+
+
+
+
 
 /**
- * P1 - Save search query to search history
- * @param {string} query - Search query to save
+ * P1 - Save search query to history
+ * @param {string} query - Search query
+ * @param {Object} criteria - Search criteria
+ * @returns {boolean} - Success status
  */
-// function saveSearchHistory(query) { }
+function saveSearchHistory(query, criteria = {}) {
+    let searchHistory = getSearchHistory(10);
+    searchHistory.push({ query, criteria, timestamp: new Date().toISOString() });
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    return true;
+}
 
 /**
  * P1 - Get recent search queries
- * @returns {Array} - Array of recent search queries
+ * @param {number} limit - Number of recent searches to return
+ * @returns {Array} - Array of recent search objects
  */
-// function getSearchHistory() { }
+function getSearchHistory(limit = 10) {
+    let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+    return searchHistory.slice(0, limit);
+}
 
 /**
  * P1 - Clear search history
+ * @returns {boolean} - Success status
  */
-// function clearSearchHistory() { }
+function clearSearchHistory() {
+    let searchHistory = getSearchHistory(10);
+    searchHistory = [];
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    return true;
+}
+
+/**
+ * P1 - Save a search as a named search
+ * @param {string} name - Search name
+ * @param {Object} criteria - Search criteria
+ * @returns {boolean} - Success status
+ */
+function saveSearch(name, criteria) {
+    let savedSearches = getSavedSearches();
+    savedSearches.push({ name, criteria, timestamp: new Date().toISOString() });
+    localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+    return true;
+}
+
+/**
+ * P1 - Get all saved searches
+ * @returns {Array} - Array of saved search objects
+ */
+function getSavedSearches() {
+    let savedSearches = JSON.parse(localStorage.getItem('savedSearches')) || [];
+    return savedSearches;
+}
+
+/**
+ * P1 - Delete a saved search
+ * @param {string} name - Search name
+ * @returns {boolean} - Success status
+ */
+function deleteSavedSearch(name) {
+    let savedSearches = getSavedSearches();
+    savedSearches = savedSearches.filter(search => search.name !== name);
+    localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+    return true;
+}
 
 /**
  * Utility - Debounce search input to avoid excessive API calls
@@ -166,6 +278,16 @@ function sortByRelevance(results, query) {
 export {
   searchNotesByTitle,
   searchNotesByContent,
+  advancedSearch,
+  searchByDateRange,
+  fullTextSearch,
+  saveSearchHistory,
+  getSearchHistory,
+  clearSearchHistory,
+  saveSearch,
+  getSavedSearches,
+  deleteSavedSearch,
+  highlightSearchTerms,
   sortByDate,
   sortByTitle,
   getSearchSuggestions,

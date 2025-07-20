@@ -705,6 +705,224 @@ class BearNotesApp {
             alert('Failed to delete category. Please try again.');
         }
     }
+
+    // ===== ADVANCED SEARCH METHODS =====
+
+    /**
+     * Initialize advanced search functionality
+     * @returns {void}
+     */
+    initializeAdvancedSearch() {
+        // TODO: Implement advanced search initialization
+        // - Set up keyboard shortcuts (Ctrl+K)
+        // - Initialize search history
+        // - Set up advanced search panel
+    }
+
+    /**
+     * Handle keyboard shortcuts for search
+     * @param {KeyboardEvent} event - Keyboard event
+     * @returns {void}
+     */
+    handleSearchKeyboardShortcuts(event) {
+        // TODO: Implement search keyboard shortcuts
+        // - Handle Ctrl+K for quick search
+        // - Handle Escape to clear search
+        // - Handle Enter to execute search
+    }
+
+    /**
+     * Show advanced search panel
+     * @returns {void}
+     */
+    showAdvancedSearchPanel() {
+        // TODO: Implement advanced search panel display
+        // - Show search criteria form
+        // - Display search history
+        // - Show saved searches
+    }
+
+    /**
+     * Hide advanced search panel
+     * @returns {void}
+     */
+    hideAdvancedSearchPanel() {
+        // TODO: Implement advanced search panel hiding
+        // - Hide search panel
+        // - Clear search criteria
+        // - Reset search state
+    }
+
+    /**
+     * Execute advanced search
+     * @param {Object} criteria - Search criteria
+     * @returns {void}
+     */
+    executeAdvancedSearch(criteria) {
+        // TODO: Implement advanced search execution
+        // - Call advancedSearch function
+        // - Update search results display
+        // - Save to search history
+        // - Update UI state
+    }
+
+    /**
+     * Display search results with highlighting
+     * @param {Array} results - Search results
+     * @returns {void}
+     */
+    displaySearchResults(results) {
+        // TODO: Implement search results display
+        // - Highlight search terms in results
+        // - Show relevance scores
+        // - Update notes list with results
+        // - Show result count
+    }
+
+    // ===== RICH TEXT EDITING METHODS =====
+
+    /**
+     * Initialize rich text editing
+     * @returns {void}
+     */
+    initializeRichTextEditing() {
+        // TODO: Implement rich text editing initialization
+        // - Set up markdown editor
+        // - Initialize formatting toolbar
+        // - Set up paste handlers
+        // - Configure code highlighting
+    }
+
+    /**
+     * Toggle markdown preview mode
+     * @returns {void}
+     */
+    toggleMarkdownPreview() {
+        // TODO: Implement markdown preview toggle
+        // - Switch between edit and preview modes
+        // - Convert markdown to HTML for preview
+        // - Update editor state
+        // - Show/hide formatting toolbar
+    }
+
+    /**
+     * Handle image upload
+     * @param {File} file - Image file
+     * @returns {Promise<string>} - Image URL
+     */
+    async handleImageUpload(file) {
+        // TODO: Implement image upload handling
+        // - Validate image file
+        // - Convert to base64 or upload
+        // - Insert image into editor
+        // - Return image URL
+    }
+
+    /**
+     * Show formatting toolbar
+     * @returns {void}
+     */
+    showFormattingToolbar() {
+        // TODO: Implement formatting toolbar display
+        // - Show toolbar with formatting buttons
+        // - Position toolbar appropriately
+        // - Handle toolbar interactions
+    }
+
+    /**
+     * Hide formatting toolbar
+     * @returns {void}
+     */
+    hideFormattingToolbar() {
+        // TODO: Implement formatting toolbar hiding
+        // - Hide toolbar
+        // - Clean up event listeners
+        // - Reset toolbar state
+    }
+
+    // ===== EXPORT/IMPORT METHODS =====
+
+    /**
+     * Initialize export/import functionality
+     * @returns {void}
+     */
+    initializeExportImport() {
+        // TODO: Implement export/import initialization
+        // - Set up export/import buttons
+        // - Initialize backup system
+        // - Set up file handlers
+    }
+
+    /**
+     * Show export dialog
+     * @param {string} format - Export format
+     * @returns {void}
+     */
+    showExportDialog(format) {
+        // TODO: Implement export dialog display
+        // - Show export options
+        // - Allow format selection
+        // - Handle export execution
+    }
+
+    /**
+     * Show import dialog
+     * @returns {void}
+     */
+    showImportDialog() {
+        // TODO: Implement import dialog display
+        // - Show file upload interface
+        // - Handle file selection
+        // - Validate import data
+    }
+
+    /**
+     * Handle file upload for import
+     * @param {FileList} files - Uploaded files
+     * @returns {Promise<void>}
+     */
+    async handleFileUpload(files) {
+        // TODO: Implement file upload handling
+        // - Process uploaded files
+        // - Validate file types
+        // - Import data from files
+        // - Update UI after import
+    }
+
+    /**
+     * Show backup management dialog
+     * @returns {void}
+     */
+    showBackupDialog() {
+        // TODO: Implement backup dialog display
+        // - Show backup history
+        // - Allow backup creation/restoration
+        // - Handle backup management
+    }
+
+    /**
+     * Create manual backup
+     * @returns {Promise<void>}
+     */
+    async createManualBackup() {
+        // TODO: Implement manual backup creation
+        // - Create backup of current data
+        // - Show backup progress
+        // - Update backup history
+        // - Provide feedback to user
+    }
+
+    /**
+     * Show statistics dashboard
+     * @returns {void}
+     */
+    showStatisticsDashboard() {
+        // TODO: Implement statistics dashboard display
+        // - Generate note statistics
+        // - Display charts and metrics
+        // - Show activity reports
+        // - Allow export of statistics
+    }
 }
 
 // Initialize the app when DOM is loaded
