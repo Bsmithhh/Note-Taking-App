@@ -26,8 +26,21 @@ import {
 import {
     searchNotesByTitle,
     searchNotesByContent,
+    advancedSearch,
+    searchByDateRange,
+    fullTextSearch,
+    saveSearchHistory,
+    getSearchHistory,
+    clearSearchHistory,
+    saveSearch,
+    getSavedSearches,
+    deleteSavedSearch,
+    highlightSearchTerms,
     sortByDate,
-    textMatchesQuery
+    sortByTitle,
+    getSearchSuggestions,
+    textMatchesQuery,
+    calculateRelevanceScore
 } from './search.js';
 
 class BearNotesApp {
@@ -278,7 +291,8 @@ class BearNotesApp {
         let notes = [];
         
         if (this.searchQuery) {
-            notes = searchNotes(this.searchQuery);
+            // Use full-text search with relevance scoring
+            notes = fullTextSearch(this.searchQuery);
         } else if (this.currentCategory === 'all') {
             notes = getAllNotes();
         } else if (this.currentCategory === 'untagged') {
@@ -287,13 +301,38 @@ class BearNotesApp {
             notes = getNotesByCategory(this.currentCategory);
         }
 
-        // Sort by most recent
-        notes.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+        // Sort by most recent (unless search results are already sorted by relevance)
+        if (!this.searchQuery) {
+            notes.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+        }
+
+        this.displayNotesList(notes, notesList);
+    }
+
+    displayNotesList(notes, notesList) {
+        if (notes.length === 0) {
+            notesList.innerHTML = `
+                <div class="empty-notes">
+                    <p>${this.searchQuery ? 'No notes found matching your search.' : 'No notes yet.'}</p>
+                    ${!this.searchQuery ? '<button class="new-note-btn-small">Create your first note</button>' : ''}
+                </div>
+            `;
+            return;
+        }
 
         notesList.innerHTML = notes.map(note => {
             const category = getCategoryByName(note.category);
             const categoryColor = category ? category.color : '#f0f0f0';
             const relativeTime = getRelativeTime(note.lastModified);
+            
+            // Highlight search terms if there's a search query
+            let title = this.escapeHtml(note.title);
+            let content = this.escapeHtml(note.content.substring(0, 100));
+            
+            if (this.searchQuery) {
+                title = highlightSearchTerms(title, this.searchQuery);
+                content = highlightSearchTerms(content, this.searchQuery);
+            }
             
             return `
                 <div class="note-item" data-note-id="${note.id}">
@@ -304,12 +343,13 @@ class BearNotesApp {
                             </div>
                         </div>
                         <div class="note-content">
-                            <h3>${this.escapeHtml(note.title)}</h3>
-                            <p>${this.escapeHtml(note.content.substring(0, 100))}${note.content.length > 100 ? '...' : ''}</p>
+                            <h3>${title}</h3>
+                            <p>${content}${note.content.length > 100 ? '...' : ''}</p>
                             <div class="note-meta">
                                 <span class="note-date">${relativeTime}</span>
                                 <div class="note-tags">
                                     ${note.category ? `<span class="tag" style="background-color: ${categoryColor}; color: white;">#${note.category}</span>` : ''}
+                                    ${note.score ? `<span class="relevance-score">Relevance: ${(note.score * 100).toFixed(0)}%</span>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -534,11 +574,20 @@ class BearNotesApp {
 
     handleSearch(query) {
         this.searchQuery = query.trim();
-        this.renderNotesList();
         
-        // Update search results count
-        const notes = this.searchQuery ? searchNotes(this.searchQuery) : getAllNotes();
-        console.log(`Search results: ${notes.length} notes found`);
+        if (this.searchQuery) {
+            // Use full-text search with relevance scoring
+            const searchResults = fullTextSearch(this.searchQuery);
+            this.displaySearchResults(searchResults);
+            
+            // Save search to history
+            saveSearchHistory(this.searchQuery, {});
+            
+            console.log(`Search results: ${searchResults.length} notes found`);
+        } else {
+            // Show all notes when search is cleared
+            this.renderNotesList();
+        }
     }
 
     filterByCategory(categoryName) {
@@ -772,11 +821,40 @@ class BearNotesApp {
      * @returns {void}
      */
     displaySearchResults(results) {
-        // TODO: Implement search results display
-        // - Highlight search terms in results
-        // - Show relevance scores
-        // - Update notes list with results
-        // - Show result count
+        const notesList = document.querySelector('.notes-list');
+        if (!notesList) return;
+
+        if (results.length === 0) {
+            notesList.innerHTML = `
+                <div class="empty-notes">
+                    <p>No notes found matching "${this.searchQuery}"</p>
+                    <p>Try different keywords or check your spelling.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Display results with highlighting and relevance scores
+        this.displayNotesList(results, notesList);
+
+        // Show search summary
+        const searchSummary = document.createElement('div');
+        searchSummary.className = 'search-summary';
+        searchSummary.innerHTML = `
+            <p>Found ${results.length} note${results.length === 1 ? '' : 's'} for "${this.searchQuery}"</p>
+            <button class="clear-search-btn" onclick="window.bearNotesApp.clearSearch()">Clear Search</button>
+        `;
+        
+        notesList.insertBefore(searchSummary, notesList.firstChild);
+    }
+
+    clearSearch() {
+        this.searchQuery = '';
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        this.renderNotesList();
     }
 
     // ===== RICH TEXT EDITING METHODS =====
