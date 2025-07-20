@@ -314,7 +314,6 @@ class BearNotesApp {
             notesList.innerHTML = `
                 <div class="empty-notes">
                     <p>${this.searchQuery ? 'No notes found matching your search.' : 'No notes yet.'}</p>
-                    ${!this.searchQuery ? '<button class="new-note-btn-small">Create your first note</button>' : ''}
                 </div>
             `;
             return;
