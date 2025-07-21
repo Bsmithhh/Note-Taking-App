@@ -25,7 +25,7 @@ import { getAllNotes } from './note.js';
  function searchNotesByContent(query, notes) {
     notes = notes || [];
     return notes.filter(function(note){
-        return note.content.toLowerCase().includes(query.toLowerCase())
+        return note.content.toLowerCase().includes(query.toLowerCase());
     })
   }
 
@@ -182,7 +182,17 @@ function sortByRelevance(results, query) {
  */
 function saveSearchHistory(query, criteria = {}) {
     let searchHistory = getSearchHistory(10);
-    searchHistory.push({ query, criteria, timestamp: new Date().toISOString() });
+    
+    // Don't save if it's the same as the most recent search
+    if (searchHistory.length > 0 && searchHistory[0].query === query) {
+        return true;
+    }
+    
+    searchHistory.unshift({ query, criteria, timestamp: new Date().toISOString() });
+    
+    // Keep only the last 10 searches
+    searchHistory = searchHistory.slice(0, 10);
+    
     localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
     return true;
 }
@@ -202,9 +212,7 @@ function getSearchHistory(limit = 10) {
  * @returns {boolean} - Success status
  */
 function clearSearchHistory() {
-    let searchHistory = getSearchHistory(10);
-    searchHistory = [];
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    localStorage.setItem('searchHistory', JSON.stringify([]));
     return true;
 }
 

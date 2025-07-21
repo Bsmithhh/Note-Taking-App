@@ -81,8 +81,18 @@
             <div class="notes-header">
                 <div class="search-container">
                     <span class="search-icon">🔍</span>
-                    <input type="text" placeholder="Search notes..." class="search-input" id="search-input">
+                    <input type="text" placeholder="Search notes..." class="search-input" id="search-input" data-original-placeholder="Search notes...">
                     <label for="search-toggle" class="search-close-btn">✕</label>
+                    <!-- Search History Dropdown -->
+                    <div class="search-history-dropdown" id="search-history-dropdown">
+                        <div class="search-history-header">
+                            <h4>Recent Searches</h4>
+                            <button class="clear-history-btn" id="clear-history-btn">Clear All</button>
+                        </div>
+                        <div class="search-history-list" id="search-history-list">
+                            <!-- Search history items will be populated here -->
+                        </div>
+                    </div>
                 </div>
                 <button class="new-note-btn">✏️</button>
             </div>

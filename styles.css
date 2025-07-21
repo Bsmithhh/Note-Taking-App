@@ -546,10 +546,114 @@ body {
 }
 
 .search-container {
-    flex: 1;
     position: relative;
     display: flex;
     align-items: center;
+    flex: 1;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-right: 12px;
+}
+
+/* Search History Dropdown */
+.search-history-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 4px;
+}
+
+.search-history-dropdown.show {
+    display: block;
+}
+
+.search-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #fafafa;
+}
+
+.search-history-header h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.clear-history-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.clear-history-btn:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.search-history-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.search-history-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background-color 0.2s ease;
+}
+
+.search-history-item:hover {
+    background-color: #f8f9fa;
+}
+
+.search-history-item:last-child {
+    border-bottom: none;
+}
+
+.search-history-item.selected {
+    background-color: #e3f2fd;
+    border-left: 3px solid #2196f3;
+}
+
+.search-history-query {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    margin-right: 8px;
+}
+
+.search-history-time {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.search-history-empty {
+    padding: 20px 16px;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
 }
 
 .search-icon {

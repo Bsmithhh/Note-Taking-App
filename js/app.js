@@ -66,6 +66,7 @@ class BearNotesApp {
         // Search functionality
         const searchInput = document.getElementById('search-input');
         if (searchInput) {
+            // Real-time search (without saving to history)
             searchInput.addEventListener('input', (e) => {
                 this.handleSearch(e.target.value);
             });
@@ -220,6 +221,12 @@ class BearNotesApp {
                 this.handleNoteEdit();
             });
         }
+
+        // Initialize advanced search functionality
+        this.initializeAdvancedSearch();
+        
+        // Initialize search history functionality
+        this.initializeSearchHistory();
     }
 
     loadSampleData() {
@@ -579,14 +586,213 @@ class BearNotesApp {
             const searchResults = fullTextSearch(this.searchQuery);
             this.displaySearchResults(searchResults);
             
-            // Save search to history
-            saveSearchHistory(this.searchQuery, {});
-            
             console.log(`Search results: ${searchResults.length} notes found`);
         } else {
             // Show all notes when search is cleared
             this.renderNotesList();
         }
+    }
+
+    /**
+     * Perform a search and save it to history
+     * @param {string} query - Search query
+     */
+    performSearch(query) {
+        const trimmedQuery = query.trim();
+        
+        if (trimmedQuery) {
+            // Save search to history
+            saveSearchHistory(trimmedQuery, {});
+            
+            // Perform the search
+            this.handleSearch(trimmedQuery);
+            
+            // Update search input placeholder to show search was performed
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                const originalPlaceholder = searchInput.getAttribute('data-original-placeholder') || 'Search notes...';
+                searchInput.placeholder = `Searched: "${trimmedQuery}"`;
+                setTimeout(() => {
+                    searchInput.placeholder = originalPlaceholder;
+                }, 2000);
+            }
+            
+            console.log(`Search performed and saved: "${trimmedQuery}"`);
+        }
+    }
+
+    // ===== SEARCH HISTORY METHODS =====
+
+    /**
+     * Initialize search history functionality
+     */
+    initializeSearchHistory() {
+        const searchInput = document.getElementById('search-input');
+        const searchHistoryDropdown = document.getElementById('search-history-dropdown');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+        if (!searchInput || !searchHistoryDropdown) return;
+
+        // Show search history on input focus
+        searchInput.addEventListener('focus', () => {
+            this.showSearchHistory();
+        });
+
+        // Hide search history when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchHistoryDropdown.contains(e.target)) {
+                this.hideSearchHistory();
+            }
+        });
+
+        // Handle clear history button
+        if (clearHistoryBtn) {
+            clearHistoryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.clearSearchHistory();
+            });
+        }
+
+        // Handle keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.navigateSearchHistory(e.key);
+            } else if (e.key === 'Enter') {
+                // Check if there's a selected history item
+                const selectedItem = document.querySelector('.search-history-item.selected');
+                if (selectedItem) {
+                    e.preventDefault();
+                    const query = selectedItem.dataset.query;
+                    searchInput.value = query;
+                    this.performSearch(query);
+                    this.hideSearchHistory();
+                } else {
+                    // Regular search execution
+                    e.preventDefault();
+                    this.performSearch(searchInput.value);
+                    this.hideSearchHistory();
+                }
+            }
+        });
+    }
+
+    /**
+     * Show search history dropdown
+     */
+    showSearchHistory() {
+        const dropdown = document.getElementById('search-history-dropdown');
+        if (!dropdown) return;
+
+        this.populateSearchHistory();
+        dropdown.classList.add('show');
+    }
+
+    /**
+     * Hide search history dropdown
+     */
+    hideSearchHistory() {
+        const dropdown = document.getElementById('search-history-dropdown');
+        if (dropdown) {
+            dropdown.classList.remove('show');
+        }
+    }
+
+    /**
+     * Populate search history dropdown with recent searches
+     */
+    populateSearchHistory() {
+        const historyList = document.getElementById('search-history-list');
+        if (!historyList) return;
+
+        const searchHistory = getSearchHistory(10);
+        
+        if (searchHistory.length === 0) {
+            historyList.innerHTML = '<div class="search-history-empty">No recent searches</div>';
+            return;
+        }
+
+        historyList.innerHTML = searchHistory.map((item, index) => {
+            const timeAgo = this.getTimeAgo(new Date(item.timestamp));
+            return `
+                <div class="search-history-item" data-index="${index}" data-query="${this.escapeHtml(item.query)}">
+                    <span class="search-history-query">${this.escapeHtml(item.query)}</span>
+                    <span class="search-history-time">${timeAgo}</span>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers to history items
+        historyList.querySelectorAll('.search-history-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const query = item.dataset.query;
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.value = query;
+                    this.performSearch(query);
+                }
+                this.hideSearchHistory();
+            });
+        });
+    }
+
+    /**
+     * Clear search history
+     */
+    clearSearchHistory() {
+        clearSearchHistory();
+        this.populateSearchHistory();
+        console.log('Search history cleared');
+    }
+
+    /**
+     * Navigate search history with keyboard
+     */
+    navigateSearchHistory(key) {
+        const historyItems = document.querySelectorAll('.search-history-item');
+        const searchInput = document.getElementById('search-input');
+        
+        if (!historyItems.length || !searchInput) return;
+
+        let currentIndex = -1;
+        historyItems.forEach((item, index) => {
+            if (item.classList.contains('selected')) {
+                currentIndex = index;
+            }
+        });
+
+        if (key === 'ArrowDown') {
+            currentIndex = Math.min(currentIndex + 1, historyItems.length - 1);
+        } else if (key === 'ArrowUp') {
+            currentIndex = Math.max(currentIndex - 1, -1);
+        }
+
+        // Remove previous selection
+        historyItems.forEach(item => item.classList.remove('selected'));
+
+        // Apply new selection
+        if (currentIndex >= 0) {
+            historyItems[currentIndex].classList.add('selected');
+            const query = historyItems[currentIndex].dataset.query;
+            searchInput.value = query;
+        } else {
+            searchInput.value = '';
+        }
+    }
+
+    /**
+     * Get time ago string for timestamps
+     */
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        
+        return date.toLocaleDateString();
     }
 
     filterByCategory(categoryName) {
