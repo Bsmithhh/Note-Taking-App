@@ -355,7 +355,7 @@ class BearNotesApp {
                                 <span class="note-date">${relativeTime}</span>
                                 <div class="note-tags">
                                     ${note.category ? `<span class="tag" style="background-color: ${categoryColor}; color: white;">#${note.category}</span>` : ''}
-                                    ${note.score ? `<span class="relevance-score">Relevance: ${(note.score * 100).toFixed(0)}%</span>` : ''}
+                                    ${note.score ? `<span class="relevance-score">${Math.round(note.score * 2)} match${Math.round(note.score * 2) === 1 ? '' : 'es'}</span>` : ''}
                                 </div>
                             </div>
                         </div>

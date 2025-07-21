@@ -277,9 +277,10 @@ function deleteSavedSearch(name) {
  function calculateRelevanceScore(note, query) { 
     let score = 0;
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    // 0.5 if any word in title, 0.5 if any word in content
-    if (words.some(word => note.title.toLowerCase().includes(word))) score += 0.5;
-    if (words.some(word => note.content.toLowerCase().includes(word))) score += 0.5;
+    words.forEach(word => {
+        if (note.title.toLowerCase().includes(word)) score += 0.5;
+        if (note.content.toLowerCase().includes(word)) score += 0.5;
+    });
     return score;
  }
 

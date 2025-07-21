@@ -373,9 +373,9 @@ describe('Search Module', () => {
     });
 
     test('calculateRelevanceScore handles multiple words', () => {
-      const note = { title: 'Hello World', content: 'Some content' };
-      const score = search.calculateRelevanceScore(note, 'hello world');
-      expect(score).toBe(0.5);
+      const note = { title: 'Hello World i am cool', content: 'Some content' };
+      const score = search.calculateRelevanceScore(note, 'hello world i am cool');
+      expect(score).toBe(2.5);
     });
 
     test('calculateRelevanceScore handles partial word matches', () => {
