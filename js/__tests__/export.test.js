@@ -43,6 +43,25 @@ global.FileReader = jest.fn().mockImplementation(() => ({
   onerror: null
 }));
 
+// Helper function to create a working FileReader mock
+function createMockFileReader(result, shouldError = false) {
+  const mockReader = {
+    readAsText: jest.fn().mockImplementation(() => {
+      // Simulate async behavior by triggering event after a short delay
+      setTimeout(() => {
+        if (shouldError) {
+          mockReader.onerror && mockReader.onerror({ target: { error: new Error('File read error') } });
+        } else {
+          mockReader.onload && mockReader.onload({ target: { result } });
+        }
+      }, 10);
+    }),
+    onload: null,
+    onerror: null
+  };
+  return mockReader;
+}
+
 describe('Export Module', () => {
   const mockNotes = [
     {
@@ -279,10 +298,7 @@ describe('Export Module', () => {
         const mockFile = new File([JSON.stringify(mockNotes)], 'test.json', { type: 'application/json' });
         
         // Mock FileReader success
-        const mockFileReader = new FileReader();
-        mockFileReader.onload = jest.fn().mockImplementation((event) => {
-          event.target.result = JSON.stringify(mockNotes);
-        });
+        const mockFileReader = createMockFileReader(JSON.stringify(mockNotes));
         
         // Mock the FileReader constructor to return our mock
         global.FileReader = jest.fn().mockImplementation(() => mockFileReader);
@@ -297,10 +313,7 @@ describe('Export Module', () => {
         const mockFile = new File(['invalid json'], 'test.json', { type: 'application/json' });
         
         // Mock FileReader error
-        const mockFileReader = new FileReader();
-        mockFileReader.onerror = jest.fn().mockImplementation((event) => {
-          event.target.error = new Error('File read error');
-        });
+        const mockFileReader = createMockFileReader(null, true);
         
         // Mock the FileReader constructor to return our mock
         global.FileReader = jest.fn().mockImplementation(() => mockFileReader);
@@ -316,19 +329,23 @@ describe('Export Module', () => {
           new File(['# Note 2\n\nContent 2'], 'note2.md', { type: 'text/markdown' })
         ];
         
-        // Mock FileReader success for each file
-        const mockFileReader = new FileReader();
-        mockFileReader.onload = jest.fn().mockImplementation((event) => {
-          const fileName = event.target.fileName || 'note1.md';
-          if (fileName === 'note1.md') {
-            event.target.result = '# Note 1\n\nContent 1';
-          } else {
-            event.target.result = '# Note 2\n\nContent 2';
-          }
-        });
+        // Mock FileReader to handle multiple files
+        let fileIndex = 0;
+        const fileContents = ['# Note 1\n\nContent 1', '# Note 2\n\nContent 2'];
         
-        // Mock the FileReader constructor to return our mock
-        global.FileReader = jest.fn().mockImplementation(() => mockFileReader);
+        global.FileReader = jest.fn().mockImplementation(() => ({
+          readAsText: jest.fn().mockImplementation(() => {
+            setTimeout(() => {
+              const mockReader = global.FileReader.mock.results[fileIndex].value;
+              mockReader.onload && mockReader.onload({ 
+                target: { result: fileContents[fileIndex] } 
+              });
+              fileIndex++;
+            }, 10);
+          }),
+          onload: null,
+          onerror: null
+        }));
         
         const result = await exportModule.importFromMarkdown(mockFiles);
         
@@ -351,10 +368,7 @@ describe('Export Module', () => {
         ];
         
         // Mock FileReader error
-        const mockFileReader = new FileReader();
-        mockFileReader.onerror = jest.fn().mockImplementation((event) => {
-          event.target.error = new Error('File read error');
-        });
+        const mockFileReader = createMockFileReader(null, true);
         
         // Mock the FileReader constructor to return our mock
         global.FileReader = jest.fn().mockImplementation(() => mockFileReader);
@@ -419,10 +433,7 @@ describe('Export Module', () => {
       const mockFile = new File([exportedJson], 'test.json', { type: 'application/json' });
       
       // Mock FileReader to return the exported JSON
-      const mockFileReader = new FileReader();
-      mockFileReader.onload = jest.fn().mockImplementation((event) => {
-        event.target.result = exportedJson;
-      });
+      const mockFileReader = createMockFileReader(exportedJson);
       
       // Mock the FileReader constructor to return our mock
       global.FileReader = jest.fn().mockImplementation(() => mockFileReader);

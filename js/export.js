@@ -177,10 +177,30 @@ async function importFromMarkdown(files) {
  */
 function validateImportData(data) {
     // TODO: Implement import validation
-    // - Check data structure
-    // - Validate required fields
-    // - Check for duplicate IDs
-    // - Return validation result object
+    if(!Array.isArray(data)){
+        return {
+            valid: false,
+            message: 'Import data must be an array'
+        }
+    }
+    if(data.length === 0){
+        return {
+            valid: false,
+            message: 'Import data must not be empty'
+        }
+    }
+    for(let note of data){
+        if(!note.title || !note.content){
+            return {
+                valid: false,
+                message: 'Note must have a title and content'
+            }
+        }
+    }
+    return {
+        valid: true,
+        message: 'Import data is valid'
+    }
 }
 
 /**
@@ -190,11 +210,36 @@ function validateImportData(data) {
  * @returns {Array} - Merged notes
  */
 function mergeImportedNotes(importedNotes, options = {}) {
-    // TODO: Implement note merging
-    // - Handle duplicate notes based on options
-    // - Preserve or overwrite existing notes
-    // - Update categories and relationships
-    // - Return merged notes array
+    const mergedNotes = []
+    let existingNotes = getAllNotes()
+      if(options.duplicateStrategy === 'overwrite'){
+        const importedNotesId = importedNotes.map(function(importedNotes){
+            return importedNotes.id
+        })
+        const importedNotesTitle = importedNotes.map(function(importedNotes){
+            return importedNotes.title
+        })
+        existingNotes =  existingNotes.filter(function(existingNote){
+           return !importedNotesId.includes(existingNote.id) && !importedNotesTitle.includes(existingNote.title)
+        })
+        mergedNotes.push( ...existingNotes ,...importedNotes)
+      } else if(options.duplicateStrategy === 'skip'){
+        mergedNotes.push(...existingNotes)
+      }else if (options.duplicateStrategy === 'rename') {
+        const existingNotesId = existingNotes.map(note => note.id);
+        const existingNotesTitle = existingNotes.map(note => note.title);
+    
+        importedNotes.forEach(importedNote => {
+            if (existingNotesId.includes(importedNote.id) || existingNotesTitle.includes(importedNote.title)) {
+                importedNote.title = `${importedNote.title} (Duplicate)`;
+            }
+        });
+        mergedNotes.push(...existingNotes, ...importedNotes);
+    }else{
+        throw new Error('Must specify a duplicate strategy')
+    }
+    
+    return mergedNotes;
 }
 
 /**
