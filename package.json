@@ -9,7 +9,9 @@
     "test": "jest"
   },
   "jest": {
-    "setupFiles": ["<rootDir>/jest.setup.js"]
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
@@ -24,5 +26,8 @@
     "webpack": "^5.100.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.2"
+  },
+  "dependencies": {
+    "jspdf": "^3.0.1"
   }
 }

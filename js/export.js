@@ -1,4 +1,5 @@
 // Export module - handles data export, import, backup, and statistics
+import { jsPDF } from "jspdf";
 // This file will contain functions for managing note data persistence
 
 import { getAllNotes, createNote, editNote, deleteNote } from './note.js';
@@ -11,11 +12,9 @@ import { getAllCategories, createCategory, deleteCategory } from './category.js'
  * @returns {string} - JSON string
  */
 function exportToJson(notes = null, options = {}) {
-    // TODO: Implement JSON export
-    // - Get all notes if none provided
-    // - Include categories and metadata
-    // - Format as JSON with proper structure
-    // - Return JSON string
+    let notesToExport = notes || getAllNotes();
+    let json = JSON.stringify(notesToExport, null, 2);
+    return json;
 }
 
 /**
@@ -25,26 +24,50 @@ function exportToJson(notes = null, options = {}) {
  * @returns {string} - Markdown string
  */
 function exportToMarkdown(notes = null, options = {}) {
-    // TODO: Implement Markdown export
-    // - Get all notes if none provided
-    // - Convert each note to markdown format
-    // - Include metadata as frontmatter
-    // - Return markdown string
+    let notesToExport = notes || getAllNotes();
+
+    let markdown = notesToExport.map(note => {
+        let frontmatter = [
+            '---',
+            `title: ${note.title || ''}`,
+            `category: ${note.category || 'uncategorized'}`,
+            `timestamp: ${note.timestamp || new Date().toISOString()}`,
+            '---'
+        ].join('\n');
+
+        return `${frontmatter}\n\n# ${note.title}\n\n${note.content}`;
+    }).join('\n\n---\n\n'); 
+
+    return markdown;
 }
 
-/**
- * P3 - Export notes to PDF format
- * @param {Array} notes - Notes to export (optional, defaults to all)
- * @param {Object} options - Export options
- * @returns {Promise<Blob>} - PDF blob
- */
+
 async function exportToPdf(notes = null, options = {}) {
-    // TODO: Implement PDF export
-    // - Get all notes if none provided
-    // - Use jsPDF or similar library
-    // - Format notes with proper styling
-    // - Return PDF blob
-}
+    let notesToExport = notes || getAllNotes();
+    const doc = new jsPDF();
+    let y = 10;
+  
+    notesToExport.forEach((note, index) => {
+      doc.setFontSize(16);
+      doc.text(note.title || "Untitled", 10, y);
+      y += 10;
+  
+      doc.setFontSize(12);
+      const contentLines = doc.splitTextToSize(note.content || "", 180);
+      doc.text(contentLines, 10, y);
+      y += contentLines.length * 7 + 10;
+  
+      if (y > 270 && index < notesToExport.length - 1) {
+        doc.addPage();
+        y = 10;
+      }
+    });
+  
+    // Return the PDF as a Blob for caller to handle
+    return doc.output('blob');
+  }
+  
+
 
 /**
  * P3 - Export single note to various formats
@@ -54,10 +77,21 @@ async function exportToPdf(notes = null, options = {}) {
  * @returns {Promise<string|Blob>} - Exported content
  */
 async function exportNote(note, format, options = {}) {
-    // TODO: Implement single note export
-    // - Validate note object
-    // - Call appropriate export function based on format
-    // - Return exported content
+    if (!note || note.id === undefined) {
+        console.error('Note ID is required for export');
+        return null;
+    }
+
+    if (format === 'json') {
+        return exportToJson([note], options);
+    } else if (format === 'markdown') {
+        return exportToMarkdown([note], options);
+    } else if (format === 'pdf') {
+        return exportToPdf([note], options);
+    } else {
+        console.error('Invalid export format:', format);
+        return null;
+    }
 }
 
 /**
@@ -67,10 +101,15 @@ async function exportNote(note, format, options = {}) {
  * @returns {string} - Generated filename
  */
 function generateExportFilename(format, prefix = 'notes') {
-    // TODO: Implement filename generation
-    // - Create timestamp-based filename
-    // - Add appropriate extension based on format
-    // - Return formatted filename
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 16);
+    if(format === 'json') {
+        return `${prefix}-${timestamp}.json`;
+    } else if (format === 'markdown') {
+        return `${prefix}-${timestamp}.md`;
+    } else if (format === 'pdf') {
+        return `${prefix}-${timestamp}.pdf`;
+    }
 }
 
 /**
@@ -79,11 +118,24 @@ function generateExportFilename(format, prefix = 'notes') {
  * @returns {Promise<Array>} - Imported notes
  */
 async function importFromJson(file) {
-    // TODO: Implement JSON import
-    // - Read file content
-    // - Parse JSON data
-    // - Validate note structure
-    // - Return imported notes array
+    if (!file) {
+        throw new Error('File is required for import');
+    }
+    
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+        reader.onload = (e) => {
+            try {
+                resolve(JSON.parse(e.target.result));
+            } catch (error) {
+                reject(new Error('Invalid JSON file'));
+            }
+        }
+        reader.onerror = (e) => {
+            reject(new Error('Failed to read file'));
+        }
+        reader.readAsText(file);
+    });
 }
 
 /**
@@ -92,11 +144,30 @@ async function importFromJson(file) {
  * @returns {Promise<Array>} - Imported notes
  */
 async function importFromMarkdown(files) {
-    // TODO: Implement Markdown import
-    // - Read each markdown file
-    // - Parse frontmatter for metadata
-    // - Extract content and title
-    // - Return imported notes array
+    if (!files || !Array.isArray(files)) {
+        throw new Error('Files array is required for import');
+    }
+    
+    let notes = [];
+    for(let file of files){
+        const reader = new FileReader();
+        const content = await new Promise((resolve, reject) => {
+            reader.onload = (e) => {
+                resolve(e.target.result);
+            }
+            reader.onerror = (e) => {
+                reject(new Error('Failed to read file'));
+            }
+            reader.readAsText(file);
+        });
+
+        notes.push({
+            title: file.name.replace(/\.md$/i, ''),
+            content: content.trim(),
+        });
+    }
+    
+    return notes;
 }
 
 /**
