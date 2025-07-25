@@ -2,7 +2,7 @@
 import { jsPDF } from "jspdf";
 // This file will contain functions for managing note data persistence
 
-import { getAllNotes, createNote, editNote, deleteNote } from './note.js';
+import { getAllNotes, createNote, editNote, deleteNote, generateId } from './note.js';
 import { getAllCategories, createCategory, deleteCategory } from './category.js';
 
 /**
@@ -126,7 +126,22 @@ async function importFromJson(file) {
     return new Promise((resolve, reject) => {
         reader.onload = (e) => {
             try {
-                resolve(JSON.parse(e.target.result));
+                const importedNotes = JSON.parse(e.target.result);
+                
+                // Normalize imported notes to ensure they have all required fields
+                const normalizedNotes = importedNotes.map(note => {
+                    const now = new Date().toISOString();
+                    return {
+                        id: note.id || generateId(),
+                        title: note.title || 'Untitled',
+                        content: note.content || '',
+                        category: note.category || '',
+                        timestamp: note.timestamp || now,
+                        lastModified: note.lastModified || now
+                    };
+                });
+                
+                resolve(normalizedNotes);
             } catch (error) {
                 reject(new Error('Invalid JSON file'));
             }
@@ -161,9 +176,15 @@ async function importFromMarkdown(files) {
             reader.readAsText(file);
         });
 
+        // Create a properly formatted note object with all required fields
+        const now = new Date().toISOString();
         notes.push({
+            id: generateId(),
             title: file.name.replace(/\.md$/i, ''),
             content: content.trim(),
+            category: '',
+            timestamp: now,
+            lastModified: now
         });
     }
     
@@ -176,7 +197,6 @@ async function importFromMarkdown(files) {
  * @returns {Object} - Validation result
  */
 function validateImportData(data) {
-    // TODO: Implement import validation
     if(!Array.isArray(data)){
         return {
             valid: false,
@@ -195,6 +215,11 @@ function validateImportData(data) {
                 valid: false,
                 message: 'Note must have a title and content'
             }
+        }
+        // Check for required fields that will be added if missing
+        if(!note.id || !note.timestamp || !note.lastModified){
+            // These will be normalized during import, so just log a warning
+            console.warn('Note missing required fields, will be normalized:', note.title);
         }
     }
     return {

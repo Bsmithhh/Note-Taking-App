@@ -19,7 +19,8 @@ jest.mock('../note.js', () => ({
   getAllNotes: jest.fn(),
   createNote: jest.fn(),
   editNote: jest.fn(),
-  deleteNote: jest.fn()
+  deleteNote: jest.fn(),
+  generateId: jest.fn().mockReturnValue('mock-id-123')
 }));
 
 jest.mock('../category.js', () => ({
