@@ -378,6 +378,219 @@ describe('Export Module', () => {
     });
   });
 
+  describe('Validation and Merging Functions', () => {
+    describe('validateImportData', () => {
+      test('returns valid for proper note data', () => {
+        const validData = [
+          { id: '1', title: 'Test Note 1', content: 'Content 1' },
+          { id: '2', title: 'Test Note 2', content: 'Content 2' }
+        ];
+        
+        const result = exportModule.validateImportData(validData);
+        
+        expect(result.valid).toBe(true);
+        expect(result.message).toBe('Import data is valid');
+      });
+
+      test('returns invalid for non-array data', () => {
+        const invalidData = { id: '1', title: 'Test', content: 'Content' };
+        
+        const result = exportModule.validateImportData(invalidData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Import data must be an array');
+      });
+
+      test('returns invalid for empty array', () => {
+        const emptyData = [];
+        
+        const result = exportModule.validateImportData(emptyData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Import data must not be empty');
+      });
+
+      test('returns invalid for note without title', () => {
+        const invalidData = [
+          { id: '1', content: 'Content 1' },
+          { id: '2', title: 'Test Note 2', content: 'Content 2' }
+        ];
+        
+        const result = exportModule.validateImportData(invalidData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Note must have a title and content');
+      });
+
+      test('returns invalid for note without content', () => {
+        const invalidData = [
+          { id: '1', title: 'Test Note 1' },
+          { id: '2', title: 'Test Note 2', content: 'Content 2' }
+        ];
+        
+        const result = exportModule.validateImportData(invalidData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Note must have a title and content');
+      });
+
+      test('returns invalid for note with empty title', () => {
+        const invalidData = [
+          { id: '1', title: '', content: 'Content 1' },
+          { id: '2', title: 'Test Note 2', content: 'Content 2' }
+        ];
+        
+        const result = exportModule.validateImportData(invalidData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Note must have a title and content');
+      });
+
+      test('returns invalid for note with empty content', () => {
+        const invalidData = [
+          { id: '1', title: 'Test Note 1', content: '' },
+          { id: '2', title: 'Test Note 2', content: 'Content 2' }
+        ];
+        
+        const result = exportModule.validateImportData(invalidData);
+        
+        expect(result.valid).toBe(false);
+        expect(result.message).toBe('Note must have a title and content');
+      });
+    });
+
+    describe('mergeImportedNotes', () => {
+      const existingNotes = [
+        { id: '1', title: 'Existing Note 1', content: 'Existing Content 1' },
+        { id: '2', title: 'Existing Note 2', content: 'Existing Content 2' }
+      ];
+
+      const importedNotes = [
+        { id: '3', title: 'New Note 1', content: 'New Content 1' },
+        { id: '4', title: 'New Note 2', content: 'New Content 2' }
+      ];
+
+      beforeEach(() => {
+        getAllNotes.mockReturnValue(existingNotes);
+      });
+
+      test('overwrite strategy replaces existing notes with same ID', () => {
+        const conflictingImportedNotes = [
+          { id: '1', title: 'Updated Note 1', content: 'Updated Content 1' },
+          { id: '5', title: 'New Note 3', content: 'New Content 3' }
+        ];
+        
+        const result = exportModule.mergeImportedNotes(conflictingImportedNotes, { 
+          duplicateStrategy: 'overwrite' 
+        });
+        
+        expect(result.length).toBe(3); // 1 existing + 2 imported
+        expect(result.find(note => note.id === '1').title).toBe('Updated Note 1');
+        expect(result.find(note => note.id === '2')).toBeDefined(); // Should still exist
+        expect(result.find(note => note.id === '5')).toBeDefined(); // Should be added
+      });
+
+      test('overwrite strategy replaces existing notes with same title', () => {
+        const conflictingImportedNotes = [
+          { id: '6', title: 'Existing Note 1', content: 'Updated Content' },
+          { id: '7', title: 'New Note 3', content: 'New Content 3' }
+        ];
+        
+        const result = exportModule.mergeImportedNotes(conflictingImportedNotes, { 
+          duplicateStrategy: 'overwrite' 
+        });
+        
+        expect(result.length).toBe(3); // 1 existing + 2 imported (1 replaced)
+        expect(result.find(note => note.title === 'Existing Note 1').id).toBe('6');
+        expect(result.find(note => note.id === '2')).toBeDefined(); // Should still exist
+      });
+
+      test('skip strategy keeps existing notes unchanged', () => {
+        const conflictingImportedNotes = [
+          { id: '1', title: 'Updated Note 1', content: 'Updated Content 1' },
+          { id: '5', title: 'New Note 3', content: 'New Content 3' }
+        ];
+        
+        const result = exportModule.mergeImportedNotes(conflictingImportedNotes, { 
+          duplicateStrategy: 'skip' 
+        });
+        
+        expect(result.length).toBe(2); // Only existing notes
+        expect(result.find(note => note.id === '1').title).toBe('Existing Note 1'); // Original unchanged
+        expect(result.find(note => note.id === '2')).toBeDefined(); // Should still exist
+      });
+
+      test('rename strategy adds duplicate suffix to conflicting notes', () => {
+        const conflictingImportedNotes = [
+          { id: '1', title: 'Existing Note 1', content: 'New Content' }, // ID conflict
+          { id: '3', title: 'Existing Note 2', content: 'New Content 3' } // Title conflict
+        ];
+        
+        const result = exportModule.mergeImportedNotes(conflictingImportedNotes, { 
+          duplicateStrategy: 'rename' 
+        });
+        
+        expect(result.length).toBe(4); // 2 existing + 2 imported (both renamed)
+        
+        // Check that we have both the original and renamed versions
+        const originalNote1 = result.find(note => note.id === '1' && note.title === 'Existing Note 1');
+        const renamedNote1 = result.find(note => note.id === '1' && note.title === 'Existing Note 1 (Duplicate)');
+        const originalNote2 = result.find(note => note.id === '2' && note.title === 'Existing Note 2');
+        const renamedNote3 = result.find(note => note.id === '3' && note.title === 'Existing Note 2 (Duplicate)');
+        
+        expect(originalNote1).toBeDefined(); // Original note still exists
+        expect(renamedNote1).toBeDefined(); // Renamed note exists
+        expect(originalNote2).toBeDefined(); // Original note 2 still exists
+        expect(renamedNote3).toBeDefined(); // Renamed note 3 exists
+      });
+
+      test('throws error when no duplicate strategy specified', () => {
+        const importedNotes = [
+          { id: '3', title: 'New Note 1', content: 'New Content 1' }
+        ];
+        
+        expect(() => {
+          exportModule.mergeImportedNotes(importedNotes, {});
+        }).toThrow('Must specify a duplicate strategy');
+      });
+
+      test('handles empty imported notes array', () => {
+        const result = exportModule.mergeImportedNotes([], { 
+          duplicateStrategy: 'skip' 
+        });
+        
+        expect(result.length).toBe(2); // Only existing notes
+        expect(result).toEqual(existingNotes);
+      });
+
+      test('handles no existing notes', () => {
+        getAllNotes.mockReturnValue([]);
+        
+        const result = exportModule.mergeImportedNotes(importedNotes, { 
+          duplicateStrategy: 'overwrite' 
+        });
+        
+        expect(result.length).toBe(2); // Only imported notes
+        expect(result).toEqual(importedNotes);
+      });
+
+      test('overwrite strategy with no conflicts adds all notes', () => {
+        const newNotes = [
+          { id: '5', title: 'New Note 1', content: 'New Content 1' },
+          { id: '6', title: 'New Note 2', content: 'New Content 2' }
+        ];
+        
+        const result = exportModule.mergeImportedNotes(newNotes, { 
+          duplicateStrategy: 'overwrite' 
+        });
+        
+        expect(result.length).toBe(4); // 2 existing + 2 new
+        expect(result.find(note => note.id === '5')).toBeDefined();
+        expect(result.find(note => note.id === '6')).toBeDefined();
+      });
+    });
+  });
+
   describe('Edge Cases and Error Handling', () => {
     test('exportToJson handles empty notes array', () => {
       getAllNotes.mockReturnValue([]);
