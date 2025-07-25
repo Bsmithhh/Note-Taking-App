@@ -94,7 +94,11 @@
                         </div>
                     </div>
                 </div>
-                <button class="new-note-btn">✏️</button>
+                <div class="notes-actions">
+                    <button class="export-btn" id="export-btn" title="Export Notes">📤</button>
+                    <button class="import-btn" id="import-btn" title="Import Notes">📥</button>
+                    <button class="new-note-btn">✏️</button>
+                </div>
             </div>
 
             <div class="notes-list">
@@ -192,6 +196,95 @@
                     <div class="form-actions">
                         <button type="button" id="cancel-delete-category" class="btn-secondary">Cancel</button>
                         <button type="button" id="confirm-delete-category" class="btn-danger">Delete Category</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="export-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Export Notes</h3>
+                    <button class="close-modal" type="button">✕</button>
+                </div>
+                <div class="export-content">
+                    <div class="form-group">
+                        <label>Export Format:</label>
+                        <div class="export-options">
+                            <label class="export-option">
+                                <input type="radio" name="export-format" value="json" checked>
+                                <span>JSON</span>
+                            </label>
+                            <label class="export-option">
+                                <input type="radio" name="export-format" value="markdown">
+                                <span>Markdown</span>
+                            </label>
+                            <label class="export-option">
+                                <input type="radio" name="export-format" value="pdf">
+                                <span>PDF</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Export Scope:</label>
+                        <div class="export-scope">
+                            <label class="export-option">
+                                <input type="radio" name="export-scope" value="all" checked>
+                                <span>All Notes</span>
+                            </label>
+                            <label class="export-option">
+                                <input type="radio" name="export-scope" value="current">
+                                <span>Current Note</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="export-error" class="error-message"></div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-export" class="btn-secondary">Cancel</button>
+                        <button type="button" id="confirm-export" class="btn-primary">Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Modal -->
+        <div id="import-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Import Notes</h3>
+                    <button class="close-modal" type="button">✕</button>
+                </div>
+                <div class="import-content">
+                    <div class="form-group">
+                        <label>Import Format:</label>
+                        <div class="import-options">
+                            <label class="import-option">
+                                <input type="radio" name="import-format" value="json" checked>
+                                <span>JSON</span>
+                            </label>
+                            <label class="import-option">
+                                <input type="radio" name="import-format" value="markdown">
+                                <span>Markdown Files</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Duplicate Strategy:</label>
+                        <select id="duplicate-strategy">
+                            <option value="rename">Rename Duplicates</option>
+                            <option value="overwrite">Overwrite Existing</option>
+                            <option value="skip">Skip Duplicates</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="import-files">Select Files:</label>
+                        <input type="file" id="import-files" multiple accept=".json,.md,.markdown">
+                    </div>
+                    <div id="import-error" class="error-message"></div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-import" class="btn-secondary">Cancel</button>
+                        <button type="button" id="confirm-import" class="btn-primary">Import</button>
                     </div>
                 </div>
             </div>

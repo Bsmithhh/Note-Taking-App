@@ -43,6 +43,18 @@ import {
     calculateRelevanceScore
 } from './search.js';
 
+import {
+    exportToJson,
+    exportToMarkdown,
+    exportToPdf,
+    exportNote,
+    generateExportFilename,
+    importFromJson,
+    importFromMarkdown,
+    validateImportData,
+    mergeImportedNotes
+} from './export.js';
+
 class BearNotesApp {
     constructor() {
         this.currentNoteId = null;
@@ -53,6 +65,7 @@ class BearNotesApp {
         
         this.initializeApp();
         this.bindEvents();
+        this.initializeExportImport();
         this.loadSampleData();
     }
 
@@ -1130,22 +1143,90 @@ class BearNotesApp {
      * @returns {void}
      */
     initializeExportImport() {
-        // TODO: Implement export/import initialization
-        // - Set up export/import buttons
-        // - Initialize backup system
-        // - Set up file handlers
+        // Export button
+        const exportBtn = document.getElementById('export-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.showExportDialog();
+            });
+        }
+
+        // Import button
+        const importBtn = document.getElementById('import-btn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                this.showImportDialog();
+            });
+        }
+
+        // Export modal events
+        const exportModal = document.getElementById('export-modal');
+        const confirmExportBtn = document.getElementById('confirm-export');
+        const cancelExportBtn = document.getElementById('cancel-export');
+
+        if (confirmExportBtn) {
+            confirmExportBtn.addEventListener('click', () => {
+                this.handleExport();
+            });
+        }
+
+        if (cancelExportBtn) {
+            cancelExportBtn.addEventListener('click', () => {
+                this.hideExportDialog();
+            });
+        }
+
+        // Import modal events
+        const importModal = document.getElementById('import-modal');
+        const confirmImportBtn = document.getElementById('confirm-import');
+        const cancelImportBtn = document.getElementById('cancel-import');
+
+        if (confirmImportBtn) {
+            confirmImportBtn.addEventListener('click', () => {
+                this.handleImport();
+            });
+        }
+
+        if (cancelImportBtn) {
+            cancelImportBtn.addEventListener('click', () => {
+                this.hideImportDialog();
+            });
+        }
+
+        // Close modal events
+        const closeButtons = document.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.hideExportDialog();
+                this.hideImportDialog();
+            });
+        });
     }
 
     /**
      * Show export dialog
-     * @param {string} format - Export format
      * @returns {void}
      */
-    showExportDialog(format) {
-        // TODO: Implement export dialog display
-        // - Show export options
-        // - Allow format selection
-        // - Handle export execution
+    showExportDialog() {
+        const exportModal = document.getElementById('export-modal');
+        if (exportModal) {
+            exportModal.style.display = 'flex';
+            // Reset form
+            document.querySelector('input[name="export-format"][value="json"]').checked = true;
+            document.querySelector('input[name="export-scope"][value="all"]').checked = true;
+            document.getElementById('export-error').textContent = '';
+        }
+    }
+
+    /**
+     * Hide export dialog
+     * @returns {void}
+     */
+    hideExportDialog() {
+        const exportModal = document.getElementById('export-modal');
+        if (exportModal) {
+            exportModal.style.display = 'none';
+        }
     }
 
     /**
@@ -1153,58 +1234,162 @@ class BearNotesApp {
      * @returns {void}
      */
     showImportDialog() {
-        // TODO: Implement import dialog display
-        // - Show file upload interface
-        // - Handle file selection
-        // - Validate import data
+        const importModal = document.getElementById('import-modal');
+        if (importModal) {
+            importModal.style.display = 'flex';
+            // Reset form
+            document.querySelector('input[name="import-format"][value="json"]').checked = true;
+            document.getElementById('duplicate-strategy').value = 'rename';
+            document.getElementById('import-files').value = '';
+            document.getElementById('import-error').textContent = '';
+        }
     }
 
     /**
-     * Handle file upload for import
-     * @param {FileList} files - Uploaded files
-     * @returns {Promise<void>}
-     */
-    async handleFileUpload(files) {
-        // TODO: Implement file upload handling
-        // - Process uploaded files
-        // - Validate file types
-        // - Import data from files
-        // - Update UI after import
-    }
-
-    /**
-     * Show backup management dialog
+     * Hide import dialog
      * @returns {void}
      */
-    showBackupDialog() {
-        // TODO: Implement backup dialog display
-        // - Show backup history
-        // - Allow backup creation/restoration
-        // - Handle backup management
+    hideImportDialog() {
+        const importModal = document.getElementById('import-modal');
+        if (importModal) {
+            importModal.style.display = 'none';
+        }
     }
 
     /**
-     * Create manual backup
+     * Handle export execution
      * @returns {Promise<void>}
      */
-    async createManualBackup() {
-        // TODO: Implement manual backup creation
-        // - Create backup of current data
-        // - Show backup progress
-        // - Update backup history
-        // - Provide feedback to user
+    async handleExport() {
+        try {
+            const format = document.querySelector('input[name="export-format"]:checked').value;
+            const scope = document.querySelector('input[name="export-scope"]:checked').value;
+            
+            let content;
+            let filename;
+
+            if (scope === 'current' && this.currentNoteId) {
+                const note = getNoteById(this.currentNoteId);
+                if (note) {
+                    content = await exportNote(note, format);
+                    filename = generateExportFilename(format, note.title);
+                } else {
+                    throw new Error('Current note not found');
+                }
+            } else {
+                // Export all notes
+                if (format === 'json') {
+                    content = exportToJson();
+                } else if (format === 'markdown') {
+                    content = exportToMarkdown();
+                } else if (format === 'pdf') {
+                    content = await exportToPdf();
+                }
+                filename = generateExportFilename(format);
+            }
+
+            if (content) {
+                this.downloadFile(content, filename, this.getMimeType(format));
+                this.hideExportDialog();
+            } else {
+                throw new Error('Failed to generate export content');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            document.getElementById('export-error').textContent = `Export failed: ${error.message}`;
+        }
     }
 
     /**
-     * Show statistics dashboard
+     * Handle import execution
+     * @returns {Promise<void>}
+     */
+    async handleImport() {
+        try {
+            const format = document.querySelector('input[name="import-format"]:checked').value;
+            const duplicateStrategy = document.getElementById('duplicate-strategy').value;
+            const files = document.getElementById('import-files').files;
+
+            if (!files || files.length === 0) {
+                throw new Error('Please select files to import');
+            }
+
+            let importedNotes = [];
+
+            if (format === 'json') {
+                if (files.length > 1) {
+                    throw new Error('JSON import supports only one file');
+                }
+                importedNotes = await importFromJson(files[0]);
+            } else if (format === 'markdown') {
+                importedNotes = await importFromMarkdown(Array.from(files));
+            }
+
+            // Validate imported data
+            const validation = validateImportData(importedNotes);
+            if (!validation.valid) {
+                throw new Error(validation.message);
+            }
+
+            // Merge notes
+            const mergedNotes = mergeImportedNotes(importedNotes, { duplicateStrategy });
+            
+            // Update localStorage with merged notes
+            localStorage.setItem('notes', JSON.stringify(mergedNotes));
+            
+            // Refresh the app
+            this.renderNotesList();
+            this.renderSidebar();
+            
+            this.hideImportDialog();
+            alert(`Successfully imported ${importedNotes.length} notes!`);
+        } catch (error) {
+            console.error('Import error:', error);
+            document.getElementById('import-error').textContent = `Import failed: ${error.message}`;
+        }
+    }
+
+    /**
+     * Download file with proper filename
+     * @param {Blob|string} content - File content
+     * @param {string} filename - Filename
+     * @param {string} mimeType - MIME type
      * @returns {void}
      */
-    showStatisticsDashboard() {
-        // TODO: Implement statistics dashboard display
-        // - Generate note statistics
-        // - Display charts and metrics
-        // - Show activity reports
-        // - Allow export of statistics
+    downloadFile(content, filename, mimeType = 'application/octet-stream') {
+        let blob;
+        if (typeof content === 'string') {
+            blob = new Blob([content], { type: mimeType });
+        } else {
+            blob = content;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Get MIME type for export format
+     * @param {string} format - Export format
+     * @returns {string} - MIME type
+     */
+    getMimeType(format) {
+        switch (format) {
+            case 'json':
+                return 'application/json';
+            case 'markdown':
+                return 'text/markdown';
+            case 'pdf':
+                return 'application/pdf';
+            default:
+                return 'application/octet-stream';
+        }
     }
 }
 
