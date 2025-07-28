@@ -1,12 +1,14 @@
 // Category service - handles all category-related operations
 // This connects to the backend API
 
-import { 
-  getAllCategories as getAllCategoriesLocal, 
-  createCategory as createCategoryLocal, 
+import {
+  getAllCategories as getAllCategoriesLocal,
+  createCategory as createCategoryLocal,
   deleteCategory as deleteCategoryLocal,
   getCategoryByName as getCategoryByNameLocal
 } from '../../js/category.js';
+
+import { getAuthToken } from './authService.js';
 
 // Get API URL from environment variable or use default
 const getApiBaseUrl = () => {
@@ -26,10 +28,21 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Helper function to get headers with authentication
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 // API integration functions
 export const getAllCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`);
+    const response = await fetch(`${API_BASE_URL}/categories`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');
       return getAllCategoriesLocal();
@@ -44,7 +57,9 @@ export const getAllCategories = async () => {
 
 export const getCategoryByName = async (name) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories/${encodeURIComponent(name)}`);
+    const response = await fetch(`${API_BASE_URL}/categories/${encodeURIComponent(name)}`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');
       return getCategoryByNameLocal(name);
@@ -61,9 +76,7 @@ export const createCategory = async (name, color = '', icon = '') => {
   try {
     const response = await fetch(`${API_BASE_URL}/categories`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ name, color, icon }),
     });
     if (!response.ok) {
@@ -82,6 +95,7 @@ export const deleteCategory = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');

@@ -1,10 +1,10 @@
 // Note service - handles all note-related operations
 // This connects to the backend API
 
-import { 
-  getAllNotes as getAllNotesLocal, 
-  createNote as createNoteLocal, 
-  editNote as editNoteLocal, 
+import {
+  getAllNotes as getAllNotesLocal,
+  createNote as createNoteLocal,
+  editNote as editNoteLocal,
   deleteNote as deleteNoteLocal,
   getNoteById as getNoteByIdLocal
 } from '../../js/note.js';
@@ -13,6 +13,8 @@ import {
   mergeImportedNotes,
   validateImportData
 } from '../../js/export.js';
+
+import { getAuthToken } from './authService.js';
 
 // Get API URL from environment variable or use default
 const getApiBaseUrl = () => {
@@ -32,10 +34,21 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Helper function to get headers with authentication
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 // API integration functions
 export const getAllNotes = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/notes`);
+    const response = await fetch(`${API_BASE_URL}/notes`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');
       return getAllNotesLocal();
@@ -50,7 +63,9 @@ export const getAllNotes = async () => {
 
 export const getNoteById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/notes/${id}`);
+    const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');
       return getNoteByIdLocal(id);
@@ -67,9 +82,7 @@ export const createNote = async (title, content, category = '') => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ title, content, category }),
     });
     if (!response.ok) {
@@ -88,9 +101,7 @@ export const editNote = async (id, title, content, category = '') => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ title, content, category }),
     });
     if (!response.ok) {
@@ -109,6 +120,7 @@ export const deleteNote = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!response.ok) {
       console.warn('API call failed, falling back to localStorage');
