@@ -23,17 +23,8 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
     if (!content) return '';
     
     // Strip HTML tags for preview
-    const textContent = content.replace(/<[^>]*>/g, '');
-    return textContent.length > 150 ? textContent.substring(0, 150) + '...' : textContent;
-  };
-
-  const getNoteThumbnail = (content) => {
-    if (!content) return '';
-    
-    // Extract first few words from content
-    const textContent = content.replace(/<[^>]*>/g, '');
-    const words = textContent.split(' ').slice(0, 10);
-    return words.join(' ');
+    const plainText = content.replace(/<[^>]*>/g, '');
+    return plainText.length > 150 ? plainText.substring(0, 150) + '...' : plainText;
   };
 
   if (notes.length === 0) {
@@ -47,13 +38,7 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
   }
 
   return (
-    <>
-      {isSearching && (
-        <div className="search-results-header">
-          Found {notes.length} note{notes.length !== 1 ? 's' : ''}
-        </div>
-      )}
-      
+    <div className="notes-list">
       {notes.map(note => (
         <div
           key={note.id}
@@ -61,7 +46,7 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
           onClick={() => onNoteSelect(note.id)}
         >
           <div className="note-item-header">
-            <h3 className="note-title">{note.title || 'Untitled'}</h3>
+            <h3 className="note-title">{note.title || 'Untitled Note'}</h3>
             <button
               className="delete-btn"
               onClick={(e) => {
@@ -74,26 +59,23 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
             </button>
           </div>
           
-          <div className="note-preview">
+          <p className="note-preview">
             {formatNoteContent(note.content)}
-          </div>
+          </p>
           
-          <div className="note-date">
-            {getTimeAgo(note.lastModified || note.timestamp)}
+          <div className="note-meta">
+            <span className="note-date">
+              {getTimeAgo(note.lastModified)}
+            </span>
             {note.category && (
               <span className="note-category">
-                • {note.category}
-              </span>
-            )}
-            {note.score && (
-              <span className="relevance-score">
-                • {Math.round(note.score * 2)} matches
+                {note.category}
               </span>
             )}
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 };
 

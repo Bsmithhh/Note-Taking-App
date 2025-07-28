@@ -319,6 +319,15 @@ function App() {
           </div>
         </div>
 
+        {/* Floating Add Note Button */}
+        <button 
+          className="add-note-btn"
+          onClick={() => openModal('createNote')}
+          title="Create New Note"
+        >
+          +
+        </button>
+
         {/* Modals */}
         <ExportModal 
           isOpen={modals.export}
