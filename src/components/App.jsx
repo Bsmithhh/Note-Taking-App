@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import NotesList from './NotesList';
@@ -43,82 +43,118 @@ function App() {
   });
   const [deleteCategoryData, setDeleteCategoryData] = useState(null);
 
+  // Use ref to track mounted state
+  const mountedRef = useRef(true);
+  const timeoutRef = useRef(null);
+
   // Check authentication on app load
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     
     const initializeApp = async () => {
       try {
-        if (isAuthenticated() && mounted) {
+        if (isAuthenticated() && mountedRef.current) {
           const currentUser = getCurrentUser();
-          setUser(currentUser);
-          loadNotes();
-          loadCategories();
+          if (mountedRef.current) {
+            setUser(currentUser);
+            loadNotes();
+            loadCategories();
+          }
         }
       } catch (error) {
         console.error('Error initializing app:', error);
       }
     };
 
-    initializeApp();
+    // Use setTimeout to ensure DOM is ready
+    timeoutRef.current = setTimeout(initializeApp, 0);
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
-  const loadNotes = () => {
+  const loadNotes = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     try {
       const allNotes = getAllNotes();
-      setNotes(allNotes);
+      if (mountedRef.current) {
+        setNotes(allNotes);
+      }
     } catch (error) {
       console.error('Error loading notes:', error);
-      setNotes([]);
+      if (mountedRef.current) {
+        setNotes([]);
+      }
     }
-  };
+  }, []);
 
-  const loadCategories = () => {
+  const loadCategories = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     try {
       const allCategories = getAllCategories();
-      setCategories(allCategories);
+      if (mountedRef.current) {
+        setCategories(allCategories);
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
-      setCategories([]);
+      if (mountedRef.current) {
+        setCategories([]);
+      }
     }
-  };
+  }, []);
 
-  const handleSearch = (query) => {
+  const handleSearch = useCallback((query) => {
+    if (!mountedRef.current) return;
+    
     setSearchQuery(query);
     if (query.trim()) {
       try {
         const results = fullTextSearch(query, notes);
-        setSearchResults(results);
-        setIsSearching(true);
+        if (mountedRef.current) {
+          setSearchResults(results);
+          setIsSearching(true);
+        }
       } catch (error) {
         console.error('Error searching notes:', error);
+        if (mountedRef.current) {
+          setSearchResults([]);
+          setIsSearching(false);
+        }
+      }
+    } else {
+      if (mountedRef.current) {
         setSearchResults([]);
         setIsSearching(false);
       }
-    } else {
-      setSearchResults([]);
-      setIsSearching(false);
     }
-  };
+  }, [notes]);
 
-  const handleNoteSelect = (noteId) => {
+  const handleNoteSelect = useCallback((noteId) => {
+    if (!mountedRef.current) return;
+    
     try {
       const note = notes.find(n => n.id === noteId);
-      setCurrentNote(note);
-      // Close sidebar on mobile when note is selected
-      if (window.innerWidth <= 768) {
-        setSidebarOpen(false);
+      if (mountedRef.current) {
+        setCurrentNote(note);
+        // Close sidebar on mobile when note is selected
+        if (window.innerWidth <= 768) {
+          setSidebarOpen(false);
+        }
       }
     } catch (error) {
       console.error('Error selecting note:', error);
     }
-  };
+  }, [notes]);
 
-  const handleNoteSave = (noteData) => {
+  const handleNoteSave = useCallback((noteData) => {
+    if (!mountedRef.current) return;
+    
     try {
       if (noteData.id) {
         editNote(noteData.id, noteData.title, noteData.content, noteData.category);
@@ -130,98 +166,118 @@ function App() {
     } catch (error) {
       console.error('Error saving note:', error);
     }
-  };
+  }, [loadNotes, loadCategories]);
 
-  const handleNoteDelete = (noteId) => {
+  const handleNoteDelete = useCallback((noteId) => {
+    if (!mountedRef.current) return;
+    
     try {
       deleteNote(noteId);
       loadNotes();
-      if (currentNote && currentNote.id === noteId) {
+      if (currentNote && currentNote.id === noteId && mountedRef.current) {
         setCurrentNote(null);
       }
     } catch (error) {
       console.error('Error deleting note:', error);
     }
-  };
+  }, [currentNote, loadNotes]);
 
-  const handleCategoryCreate = (categoryData) => {
+  const handleCategoryCreate = useCallback((categoryData) => {
+    if (!mountedRef.current) return;
+    
     try {
       createCategory(categoryData.name);
       loadCategories();
     } catch (error) {
       console.error('Error creating category:', error);
     }
-  };
+  }, [loadCategories]);
 
-  const handleCategoryDelete = () => {
+  const handleCategoryDelete = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     try {
       if (deleteCategoryData) {
         deleteCategory(deleteCategoryData.id);
         loadCategories();
-        setDeleteCategoryData(null);
+        if (mountedRef.current) {
+          setDeleteCategoryData(null);
+        }
       }
     } catch (error) {
       console.error('Error deleting category:', error);
     }
-  };
+  }, [deleteCategoryData, loadCategories]);
 
-  const openModal = (modalName) => {
+  const openModal = useCallback((modalName) => {
+    if (!mountedRef.current) return;
     setModals(prev => ({ ...prev, [modalName]: true }));
-  };
+  }, []);
 
-  const closeModal = (modalName) => {
+  const closeModal = useCallback((modalName) => {
+    if (!mountedRef.current) return;
     setModals(prev => ({ ...prev, [modalName]: false }));
-  };
+  }, []);
 
-  const showDeleteCategoryModal = (categoryId, categoryName) => {
+  const showDeleteCategoryModal = useCallback((categoryId, categoryName) => {
+    if (!mountedRef.current) return;
     setDeleteCategoryData({ id: categoryId, name: categoryName });
     openModal('deleteCategory');
-  };
+  }, [openModal]);
 
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = useCallback((userData) => {
+    if (!mountedRef.current) return;
     setUser(userData);
     loadNotes();
     loadCategories();
     closeModal('login');
-  };
+  }, [loadNotes, loadCategories, closeModal]);
 
-  const handleRegisterSuccess = (userData) => {
+  const handleRegisterSuccess = useCallback((userData) => {
+    if (!mountedRef.current) return;
     setUser(userData);
     loadNotes();
     loadCategories();
     closeModal('register');
-  };
+  }, [loadNotes, loadCategories, closeModal]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
+    if (!mountedRef.current) return;
+    
     try {
       localStorage.removeItem('authToken');
       localStorage.removeItem('currentUser');
-      setUser(null);
-      setNotes([]);
-      setCategories([]);
-      setCurrentNote(null);
-      setSearchQuery('');
-      setSearchResults([]);
-      setIsSearching(false);
-      closeModal('profile');
+      if (mountedRef.current) {
+        setUser(null);
+        setNotes([]);
+        setCategories([]);
+        setCurrentNote(null);
+        setSearchQuery('');
+        setSearchResults([]);
+        setIsSearching(false);
+        closeModal('profile');
+      }
     } catch (error) {
       console.error('Error during logout:', error);
     }
-  };
+  }, [closeModal]);
 
-  const switchToRegister = () => {
+  const switchToRegister = useCallback(() => {
+    if (!mountedRef.current) return;
     closeModal('login');
     openModal('register');
-  };
+  }, [closeModal, openModal]);
 
-  const switchToLogin = () => {
+  const switchToLogin = useCallback(() => {
+    if (!mountedRef.current) return;
     closeModal('register');
     openModal('login');
-  };
+  }, [closeModal, openModal]);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const toggleSidebar = useCallback(() => {
+    if (!mountedRef.current) return;
+    setSidebarOpen(prev => !prev);
+  }, []);
 
   // If user is not authenticated, show login screen
   if (!user) {
@@ -321,11 +377,14 @@ function App() {
                     key={category.id}
                     className={`category-item ${searchQuery === category.name ? 'active' : ''}`}
                     onClick={() => {
+                      if (!mountedRef.current) return;
                       try {
                         const filteredNotes = notes.filter(note => note.category === category.name);
-                        setSearchResults(filteredNotes);
-                        setIsSearching(true);
-                        setSearchQuery(category.name);
+                        if (mountedRef.current) {
+                          setSearchResults(filteredNotes);
+                          setIsSearching(true);
+                          setSearchQuery(category.name);
+                        }
                       } catch (error) {
                         console.error('Error filtering notes by category:', error);
                       }
@@ -396,6 +455,7 @@ function App() {
           isOpen={modals.import}
           onClose={() => closeModal('import')}
           onImport={(importedNotes) => {
+            if (!mountedRef.current) return;
             try {
               const result = importNotes(importedNotes, { duplicateStrategy: 'rename' });
               if (result.success) {
@@ -436,6 +496,7 @@ function App() {
           onClose={() => closeModal('createNote')}
           categories={categories}
           onCreate={(noteData) => {
+            if (!mountedRef.current) return;
             try {
               createNote(noteData.title, noteData.content, noteData.category);
               loadNotes();
