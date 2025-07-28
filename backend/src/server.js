@@ -31,9 +31,28 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration
+// CORS configuration - allow multiple origins
+const allowedOrigins = [
+  'http://localhost:8090',
+  'http://localhost:3000',
+  'https://brandennotes-bsapw1r80-branden-smiths-projects.vercel.app',
+  'https://brandennotes.vercel.app',
+  'https://brandennotes-git-main-branden-smiths-projects.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // Log the blocked origin for debugging
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
