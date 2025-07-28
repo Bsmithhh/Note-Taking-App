@@ -99,8 +99,11 @@ export const importNotes = (importedNotes, options = {}) => {
 };
 
 // Future API integration functions (commented out for now)
+// These will be uncommented when we're ready to switch to the backend API
 /*
-export const getAllNotes = async () => {
+const API_BASE_URL = getApiBaseUrl();
+
+export const getAllNotesAPI = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes`);
     if (!response.ok) throw new Error('Failed to fetch notes');
@@ -111,7 +114,7 @@ export const getAllNotes = async () => {
   }
 };
 
-export const getNoteById = async (id) => {
+export const getNoteByIdAPI = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes/${id}`);
     if (!response.ok) throw new Error('Failed to fetch note');
@@ -122,7 +125,7 @@ export const getNoteById = async (id) => {
   }
 };
 
-export const createNote = async (title, content, category = '') => {
+export const createNoteAPI = async (title, content, category = '') => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes`, {
       method: 'POST',
@@ -139,7 +142,7 @@ export const createNote = async (title, content, category = '') => {
   }
 };
 
-export const editNote = async (id, noteData) => {
+export const editNoteAPI = async (id, noteData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
       method: 'PUT',
@@ -156,7 +159,7 @@ export const editNote = async (id, noteData) => {
   }
 };
 
-export const deleteNote = async (id) => {
+export const deleteNoteAPI = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
       method: 'DELETE',
