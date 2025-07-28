@@ -30,8 +30,6 @@ const getApiBaseUrl = () => {
   return 'http://localhost:3001/api';
 };
 
-const API_BASE_URL = getApiBaseUrl();
-
 // For now, we'll use the local storage functions
 // Later, these will be replaced with API calls
 
