@@ -103,18 +103,17 @@ const NoteEditor = ({ note, categories, onSave, onDelete }) => {
 
   if (!note) {
     return (
-      <div className="note-content">
-        <div className="empty-state">
-          <h2>Welcome to Bear Notes</h2>
-          <p>Select a note from the sidebar or create a new one to get started.</p>
-        </div>
+      <div className="empty-editor">
+        <div className="empty-editor-icon">📝</div>
+        <h2>Welcome to Bear Notes</h2>
+        <p>Select a note from the sidebar or create a new one to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="note-content">
-      <div className="note-header">
+    <>
+      <div className="editor-header">
         <input
           type="text"
           className="note-title-input"
@@ -124,38 +123,19 @@ const NoteEditor = ({ note, categories, onSave, onDelete }) => {
           onFocus={() => setIsEditing(true)}
         />
         
-        <div className="note-meta">
+        <div className="note-info">
           {category && (
-            <div className="note-category">
-              <span 
-                className="category-tag" 
-                style={{ 
-                  backgroundColor: categories.find(c => c.name === category)?.color || '#007bff' 
-                }}
-              >
-                {category}
-              </span>
-            </div>
+            <span className="note-category">
+              {category}
+            </span>
           )}
           <span className="note-date">
             {getTimeAgo(note.lastModified || note.timestamp)}
           </span>
+          <span className="word-count">
+            {getWordCount()} words
+          </span>
         </div>
-      </div>
-
-      <div className="note-actions">
-        <button 
-          className="note-action-btn save-btn"
-          onClick={handleSave}
-        >
-          💾 Save
-        </button>
-        <button 
-          className="note-action-btn delete-btn"
-          onClick={handleDelete}
-        >
-          🗑️ Delete
-        </button>
       </div>
 
       {editor && (
@@ -263,24 +243,30 @@ const NoteEditor = ({ note, categories, onSave, onDelete }) => {
           >
             🟡
           </button>
+          
+          <div className="toolbar-divider"></div>
+          
+          <button
+            onClick={handleSave}
+            className="save-btn"
+            title="Save Note"
+          >
+            💾 Save
+          </button>
+          <button
+            onClick={handleDelete}
+            className="delete-btn"
+            title="Delete Note"
+          >
+            🗑️ Delete
+          </button>
         </div>
       )}
 
-      <div className="note-content-area">
-        <div className="tiptap-editor-container">
-          <EditorContent editor={editor} />
-        </div>
+      <div className="note-content-input">
+        <EditorContent editor={editor} />
       </div>
-
-      <div className="note-footer">
-        <div className="word-count">
-          {getWordCount()} words
-        </div>
-        <div className="last-modified">
-          Last modified: {getTimeAgo(note.lastModified || note.timestamp)}
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 

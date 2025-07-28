@@ -18,7 +18,6 @@ import { getAllNotes, createNote, editNote, deleteNote, importNotes } from '../s
 import { getAllCategories, createCategory, deleteCategory } from '../services/categoryService';
 import { fullTextSearch } from '../services/searchService';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
-import './App.css';
 
 function App() {
   const [notes, setNotes] = useState([]);
@@ -28,6 +27,7 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [user, setUser] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modals, setModals] = useState({
     export: false,
     import: false,
@@ -77,6 +77,10 @@ function App() {
   const handleNoteSelect = (noteId) => {
     const note = notes.find(n => n.id === noteId);
     setCurrentNote(note);
+    // Close sidebar on mobile when note is selected
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleNoteSave = (noteData) => {
@@ -98,17 +102,15 @@ function App() {
   };
 
   const handleCategoryCreate = (categoryData) => {
-    createCategory(categoryData.name, categoryData.color, categoryData.icon);
+    createCategory(categoryData.name, categoryData.color);
     loadCategories();
-    closeModal('createCategory');
   };
 
   const handleCategoryDelete = () => {
     if (deleteCategoryData) {
-      deleteCategory(deleteCategoryData.id);
+      deleteCategory(deleteCategoryData.id, deleteCategoryData.reassignTo);
+      loadNotes();
       loadCategories();
-      loadNotes(); // Notes might be affected
-      closeModal('deleteCategory');
       setDeleteCategoryData(null);
     }
   };
@@ -126,7 +128,6 @@ function App() {
     openModal('deleteCategory');
   };
 
-  // Authentication handlers
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     loadNotes();
@@ -157,6 +158,10 @@ function App() {
   const switchToLogin = () => {
     closeModal('register');
     openModal('login');
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   // If user is not authenticated, show login screen
@@ -205,94 +210,51 @@ function App() {
   return (
     <Router>
       <div className="app">
-        <div className="app-header">
-          <div className="header-left">
-            <h1>Bear Notes</h1>
-            <span className="user-welcome">Welcome, {user.username}!</span>
-          </div>
-          <div className="header-right">
-            <button 
-              className="header-button"
-              onClick={() => openModal('profile')}
-            >
-              Profile
-            </button>
-          </div>
+        {/* Mobile Header */}
+        <div className="mobile-header">
+          <button className="mobile-menu-btn" onClick={toggleSidebar}>
+            ☰
+          </button>
+          <h1>Bear Notes</h1>
+          <button className="mobile-add-btn" onClick={() => openModal('createNote')}>
+            +
+          </button>
         </div>
 
-        <div className="app-content">
-          <div className="sidebar-area">
+        <div className="app-container">
+          {/* Sidebar */}
+          <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
             <div className="sidebar-header">
+              <h1 className="app-title">Bear Notes</h1>
+              <button 
+                className="add-note-btn"
+                onClick={() => openModal('createNote')}
+                title="Create Note"
+              >
+                +
+              </button>
+            </div>
+
+            <div className="search-container">
               <SearchBar onSearch={handleSearch} />
-              <div className="sidebar-actions">
-                <button 
-                  className="action-button"
-                  onClick={() => openModal('createNote')}
-                  title="Create Note"
-                >
-                  +
-                </button>
-                <button 
-                  className="action-button"
-                  onClick={() => openModal('createCategory')}
-                  title="Create Category"
-                >
-                  📁
-                </button>
-              </div>
             </div>
-            
-            <Sidebar 
-              categories={categories}
-              onCategorySelect={(category) => {
-                // Filter notes by category
-                const filteredNotes = notes.filter(note => note.category === category);
-                setNotes(filteredNotes);
-              }}
-              onCategoryDelete={showDeleteCategoryModal}
-            />
-          </div>
-          
-          <div className="main-area">
-            <div className="toolbar">
-              <div className="toolbar-left">
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('export')}
-                >
-                  Export
-                </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('import')}
-                >
-                  Import
-                </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('backup')}
-                >
-                  Backup
-                </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('statistics')}
-                >
-                  Stats
-                </button>
-              </div>
+
+            <div className="notes-list">
+              <NotesList 
+                notes={displayNotes}
+                currentNote={currentNote}
+                onNoteSelect={handleNoteSelect}
+                onNoteDelete={handleNoteDelete}
+                isSearching={isSearching}
+              />
             </div>
-            
-            <NotesList 
-              notes={displayNotes}
-              currentNote={currentNote}
-              onNoteSelect={handleNoteSelect}
-              onNoteDelete={handleNoteDelete}
-              isSearching={isSearching}
-            />
           </div>
-          
-          <div className="content-area">
+
+          {/* Sidebar Overlay for Mobile */}
+          {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+          {/* Editor Container */}
+          <div className="editor-container">
             {currentNote ? (
               <NoteEditor 
                 note={currentNote}
@@ -301,7 +263,8 @@ function App() {
                 onDelete={handleNoteDelete}
               />
             ) : (
-              <div className="empty-state">
+              <div className="empty-editor">
+                <div className="empty-editor-icon">📝</div>
                 <h2>Welcome to Bear Notes</h2>
                 <p>Select a note from the sidebar or create a new one to get started.</p>
               </div>
