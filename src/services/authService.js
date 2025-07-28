@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
     // In browser, check for environment variable or use default
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3001/api'
-      : null; // In production, we'll use localStorage fallback
+      : 'https://your-app.railway.app/api'; // Replace with your Railway URL
   }
   // In Node.js environment (build time)
   return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
