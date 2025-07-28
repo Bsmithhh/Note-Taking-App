@@ -35,7 +35,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -64,7 +64,7 @@ const updateUser = async (req, res) => {
     const { username, email, firstName, lastName, isActive } = req.body;
 
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -123,7 +123,7 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -200,7 +200,7 @@ const getUserStats = async (req, res) => {
 const activateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -231,7 +231,7 @@ const activateUser = async (req, res) => {
 const deactivateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
