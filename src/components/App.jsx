@@ -224,72 +224,72 @@ function App() {
 
         <div className="app-container">
           {/* Sidebar */}
-          <Sidebar 
-            categories={categories}
-            onCategorySelect={(categoryName) => {
-              // Filter notes by category
-              const filteredNotes = notes.filter(note => note.category === categoryName);
-              setSearchResults(filteredNotes);
-              setIsSearching(true);
-              setSearchQuery(categoryName);
-            }}
-            onCategoryDelete={showDeleteCategoryModal}
-            onCreateCategory={handleCategoryCreate}
-          />
-
-          {/* Sidebar Overlay for Mobile */}
-          {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-
-          {/* Main Content Area */}
-          <div className="main-content">
-            {/* Toolbar */}
-            <div className="toolbar">
-              <div className="toolbar-left">
-                <div className="search-container">
-                  <SearchBar onSearch={handleSearch} searchQuery={searchQuery} isSearching={isSearching} />
-                </div>
-              </div>
-              <div className="toolbar-right">
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('export')}
-                  title="Export Notes"
+          <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* Sidebar Header */}
+            <div className="sidebar-header">
+              <h1 className="app-title">Bear Notes</h1>
+              <div className="header-actions">
+                <button
+                  className="add-note-btn"
+                  onClick={() => openModal('createNote')}
+                  title="Create Note"
                 >
-                  📤 Export
+                  +
                 </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('import')}
-                  title="Import Notes"
+                <button
+                  className="add-category-btn"
+                  onClick={() => openModal('createCategory')}
+                  title="Create Category"
                 >
-                  📥 Import
-                </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('backup')}
-                  title="Backup & Restore"
-                >
-                  💾 Backup
-                </button>
-                <button 
-                  className="toolbar-button"
-                  onClick={() => openModal('statistics')}
-                  title="View Statistics"
-                >
-                  📊 Statistics
-                </button>
-                <button 
-                  className="toolbar-button profile-btn"
-                  onClick={() => openModal('profile')}
-                  title="User Profile"
-                >
-                  👤 {user?.username || 'Guest'}
+                  📁
                 </button>
               </div>
             </div>
 
-            {/* Notes List */}
-            <div className="notes-list-container">
+            {/* Search Container */}
+            <div className="search-container">
+              <SearchBar onSearch={handleSearch} searchQuery={searchQuery} isSearching={isSearching} />
+            </div>
+
+            {/* Categories Section */}
+            <div className="categories-section">
+              <div className="section-header">
+                <h3>Categories</h3>
+                <span className="notes-count">{categories.length}</span>
+              </div>
+              <div className="categories-list">
+                {categories.map(category => (
+                  <div
+                    key={category.id}
+                    className={`category-item ${searchQuery === category.name ? 'active' : ''}`}
+                    onClick={() => {
+                      const filteredNotes = notes.filter(note => note.category === category.name);
+                      setSearchResults(filteredNotes);
+                      setIsSearching(true);
+                      setSearchQuery(category.name);
+                    }}
+                  >
+                    <span>{category.name}</span>
+                    <span className="category-count">
+                      {notes.filter(note => note.category === category.name).length}
+                    </span>
+                    <button
+                      className="delete-category-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showDeleteCategoryModal(category.id, category.name);
+                      }}
+                      title="Delete category"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="notes-section">
               <NotesList 
                 notes={displayNotes}
                 currentNote={currentNote}
@@ -298,35 +298,29 @@ function App() {
                 isSearching={isSearching}
               />
             </div>
+          </div>
 
-            {/* Editor Container */}
-            <div className="editor-container">
-              {currentNote ? (
-                <NoteEditor 
-                  note={currentNote}
-                  categories={categories}
-                  onSave={handleNoteSave}
-                  onDelete={handleNoteDelete}
-                />
-              ) : (
-                <div className="empty-editor">
-                  <div className="empty-editor-icon">📝</div>
-                  <h2>Welcome to Bear Notes</h2>
-                  <p>Select a note from the sidebar or create a new one to get started.</p>
-                </div>
-              )}
-            </div>
+          {/* Sidebar Overlay for Mobile */}
+          {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+          {/* Editor Container */}
+          <div className="editor-container">
+            {currentNote ? (
+              <NoteEditor 
+                note={currentNote}
+                categories={categories}
+                onSave={handleNoteSave}
+                onDelete={handleNoteDelete}
+              />
+            ) : (
+              <div className="empty-editor">
+                <div className="empty-editor-icon">📝</div>
+                <h2>Welcome to Bear Notes</h2>
+                <p>Select a note from the sidebar or create a new one to get started.</p>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Floating Add Note Button */}
-        <button 
-          className="add-note-btn"
-          onClick={() => openModal('createNote')}
-          title="Create New Note"
-        >
-          +
-        </button>
 
         {/* Modals */}
         <ExportModal 
