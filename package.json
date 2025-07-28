@@ -3,10 +3,10 @@
   "private": true,
   "version": "10",
   "scripts": {
-    "dev": "webpack serve --mode development",
+    "start": "webpack serve --mode development --open",
     "build": "webpack --mode production",
-    "preview": "webpack serve --mode production",
-    "test": "jest"
+    "test": "jest",
+    "dev": "webpack serve --mode development"
   },
   "jest": {
     "setupFiles": [
