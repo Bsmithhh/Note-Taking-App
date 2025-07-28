@@ -1,5 +1,5 @@
 // Note service - handles all note-related operations
-// This will eventually connect to the backend API
+// This connects to the backend API
 
 import { 
   getAllNotes as getAllNotesLocal, 
@@ -30,27 +30,96 @@ const getApiBaseUrl = () => {
   return 'http://localhost:3001/api';
 };
 
-// For now, we'll use the local storage functions
-// Later, these will be replaced with API calls
+const API_BASE_URL = getApiBaseUrl();
 
-export const getAllNotes = () => {
-  return getAllNotesLocal();
+// API integration functions
+export const getAllNotes = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notes`);
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return getAllNotesLocal();
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching notes from API:', error);
+    console.log('Falling back to localStorage');
+    return getAllNotesLocal();
+  }
 };
 
-export const getNoteById = (id) => {
-  return getNoteByIdLocal(id);
+export const getNoteById = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notes/${id}`);
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return getNoteByIdLocal(id);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching note from API:', error);
+    console.log('Falling back to localStorage');
+    return getNoteByIdLocal(id);
+  }
 };
 
-export const createNote = (title, content, category = '') => {
-  return createNoteLocal(title, content, category);
+export const createNote = async (title, content, category = '') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, content, category }),
+    });
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return createNoteLocal(title, content, category);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating note via API:', error);
+    console.log('Falling back to localStorage');
+    return createNoteLocal(title, content, category);
+  }
 };
 
-export const editNote = (id, title, content, category = '') => {
-  return editNoteLocal(id, title, content, category);
+export const editNote = async (id, title, content, category = '') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, content, category }),
+    });
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return editNoteLocal(id, title, content, category);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating note via API:', error);
+    console.log('Falling back to localStorage');
+    return editNoteLocal(id, title, content, category);
+  }
 };
 
-export const deleteNote = (id) => {
-  return deleteNoteLocal(id);
+export const deleteNote = async (id) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return deleteNoteLocal(id);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting note via API:', error);
+    console.log('Falling back to localStorage');
+    return deleteNoteLocal(id);
+  }
 };
 
 // Import functions
@@ -94,79 +163,4 @@ export const importNotes = (importedNotes, options = {}) => {
       message: 'Failed to import notes'
     };
   }
-};
-
-// Future API integration functions (commented out for now)
-// These will be uncommented when we're ready to switch to the backend API
-/*
-const API_BASE_URL = getApiBaseUrl();
-
-export const getAllNotesAPI = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notes`);
-    if (!response.ok) throw new Error('Failed to fetch notes');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching notes:', error);
-    return [];
-  }
-};
-
-export const getNoteByIdAPI = async (id) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notes/${id}`);
-    if (!response.ok) throw new Error('Failed to fetch note');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching note:', error);
-    return null;
-  }
-};
-
-export const createNoteAPI = async (title, content, category = '') => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ title, content, category }),
-    });
-    if (!response.ok) throw new Error('Failed to create note');
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating note:', error);
-    throw error;
-  }
-};
-
-export const editNoteAPI = async (id, noteData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(noteData),
-    });
-    if (!response.ok) throw new Error('Failed to update note');
-    return await response.json();
-  } catch (error) {
-    console.error('Error updating note:', error);
-    throw error;
-  }
-};
-
-export const deleteNoteAPI = async (id) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notes/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete note');
-    return true;
-  } catch (error) {
-    console.error('Error deleting note:', error);
-    throw error;
-  }
-};
-*/ 
+}; 

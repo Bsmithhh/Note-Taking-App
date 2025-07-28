@@ -57,8 +57,8 @@ function App() {
           const currentUser = getCurrentUser();
           if (mountedRef.current) {
             setUser(currentUser);
-            loadNotes();
-            loadCategories();
+            await loadNotes();
+            await loadCategories();
           }
         }
       } catch (error) {
@@ -77,11 +77,11 @@ function App() {
     };
   }, []);
 
-  const loadNotes = useCallback(() => {
+  const loadNotes = useCallback(async () => {
     if (!mountedRef.current) return;
     
     try {
-      const allNotes = getAllNotes();
+      const allNotes = await getAllNotes();
       if (mountedRef.current) {
         setNotes(allNotes);
       }
@@ -93,11 +93,11 @@ function App() {
     }
   }, []);
 
-  const loadCategories = useCallback(() => {
+  const loadCategories = useCallback(async () => {
     if (!mountedRef.current) return;
     
     try {
-      const allCategories = getAllCategories();
+      const allCategories = await getAllCategories();
       if (mountedRef.current) {
         setCategories(allCategories);
       }
@@ -152,28 +152,28 @@ function App() {
     }
   }, [notes]);
 
-  const handleNoteSave = useCallback((noteData) => {
+  const handleNoteSave = useCallback(async (noteData) => {
     if (!mountedRef.current) return;
     
     try {
       if (noteData.id) {
-        editNote(noteData.id, noteData.title, noteData.content, noteData.category);
+        await editNote(noteData.id, noteData.title, noteData.content, noteData.category);
       } else {
-        createNote(noteData.title, noteData.content, noteData.category);
+        await createNote(noteData.title, noteData.content, noteData.category);
       }
-      loadNotes();
-      loadCategories();
+      await loadNotes();
+      await loadCategories();
     } catch (error) {
       console.error('Error saving note:', error);
     }
   }, [loadNotes, loadCategories]);
 
-  const handleNoteDelete = useCallback((noteId) => {
+  const handleNoteDelete = useCallback(async (noteId) => {
     if (!mountedRef.current) return;
     
     try {
-      deleteNote(noteId);
-      loadNotes();
+      await deleteNote(noteId);
+      await loadNotes();
       if (currentNote && currentNote.id === noteId && mountedRef.current) {
         setCurrentNote(null);
       }
@@ -182,24 +182,24 @@ function App() {
     }
   }, [currentNote, loadNotes]);
 
-  const handleCategoryCreate = useCallback((categoryData) => {
+  const handleCategoryCreate = useCallback(async (categoryData) => {
     if (!mountedRef.current) return;
     
     try {
-      createCategory(categoryData.name);
-      loadCategories();
+      await createCategory(categoryData.name);
+      await loadCategories();
     } catch (error) {
       console.error('Error creating category:', error);
     }
   }, [loadCategories]);
 
-  const handleCategoryDelete = useCallback(() => {
+  const handleCategoryDelete = useCallback(async () => {
     if (!mountedRef.current) return;
     
     try {
       if (deleteCategoryData) {
-        deleteCategory(deleteCategoryData.id);
-        loadCategories();
+        await deleteCategory(deleteCategoryData.id);
+        await loadCategories();
         if (mountedRef.current) {
           setDeleteCategoryData(null);
         }
@@ -225,19 +225,19 @@ function App() {
     openModal('deleteCategory');
   }, [openModal]);
 
-  const handleLoginSuccess = useCallback((userData) => {
+  const handleLoginSuccess = useCallback(async (userData) => {
     if (!mountedRef.current) return;
     setUser(userData);
-    loadNotes();
-    loadCategories();
+    await loadNotes();
+    await loadCategories();
     closeModal('login');
   }, [loadNotes, loadCategories, closeModal]);
 
-  const handleRegisterSuccess = useCallback((userData) => {
+  const handleRegisterSuccess = useCallback(async (userData) => {
     if (!mountedRef.current) return;
     setUser(userData);
-    loadNotes();
-    loadCategories();
+    await loadNotes();
+    await loadCategories();
     closeModal('register');
   }, [loadNotes, loadCategories, closeModal]);
 
@@ -454,13 +454,13 @@ function App() {
         <ImportModal 
           isOpen={modals.import}
           onClose={() => closeModal('import')}
-          onImport={(importedNotes) => {
+          onImport={async (importedNotes) => {
             if (!mountedRef.current) return;
             try {
               const result = importNotes(importedNotes, { duplicateStrategy: 'rename' });
               if (result.success) {
-                loadNotes();
-                loadCategories();
+                await loadNotes();
+                await loadCategories();
                 alert(result.message);
               } else {
                 alert(`Import failed: ${result.error}`);
@@ -477,9 +477,9 @@ function App() {
         <BackupModal 
           isOpen={modals.backup}
           onClose={() => closeModal('backup')}
-          onRestore={() => {
-            loadNotes();
-            loadCategories();
+          onRestore={async () => {
+            await loadNotes();
+            await loadCategories();
             closeModal('backup');
           }}
         />
@@ -495,11 +495,11 @@ function App() {
           isOpen={modals.createNote}
           onClose={() => closeModal('createNote')}
           categories={categories}
-          onCreate={(noteData) => {
+          onCreate={async (noteData) => {
             if (!mountedRef.current) return;
             try {
-              createNote(noteData.title, noteData.content, noteData.category);
-              loadNotes();
+              await createNote(noteData.title, noteData.content, noteData.category);
+              await loadNotes();
               closeModal('createNote');
             } catch (error) {
               console.error('Error creating note:', error);

@@ -1,5 +1,5 @@
 // Category service - handles all category-related operations
-// This will eventually connect to the backend API
+// This connects to the backend API
 
 import { 
   getAllCategories as getAllCategoriesLocal, 
@@ -8,52 +8,56 @@ import {
   getCategoryByName as getCategoryByNameLocal
 } from '../../js/category.js';
 
-// For now, we'll use the local storage functions
-// Later, these will be replaced with API calls
-
-export const getAllCategories = () => {
-  return getAllCategoriesLocal();
+// Get API URL from environment variable or use default
+const getApiBaseUrl = () => {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // In browser, check for environment variable or use default
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3001/api'
+      : 'https://note-taking-app-production-7468.up.railway.app/api'; // Production Railway backend
+  }
+  // In Node.js environment (build time) - only access process.env if it exists
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+  }
+  return 'http://localhost:3001/api';
 };
 
-export const getCategoryByName = (name) => {
-  return getCategoryByNameLocal(name);
-};
+const API_BASE_URL = getApiBaseUrl();
 
-export const createCategory = (name, color, icon = '') => {
-  return createCategoryLocal(name, color, icon);
-};
-
-export const deleteCategory = (id) => {
-  return deleteCategoryLocal(id);
-};
-
-// Future API integration functions (commented out for now)
-/*
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-
+// API integration functions
 export const getAllCategories = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/categories`);
-    if (!response.ok) throw new Error('Failed to fetch categories');
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return getAllCategoriesLocal();
+    }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
+    console.error('Error fetching categories from API:', error);
+    console.log('Falling back to localStorage');
+    return getAllCategoriesLocal();
   }
 };
 
 export const getCategoryByName = async (name) => {
   try {
     const response = await fetch(`${API_BASE_URL}/categories/${encodeURIComponent(name)}`);
-    if (!response.ok) throw new Error('Failed to fetch category');
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return getCategoryByNameLocal(name);
+    }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching category:', error);
-    return null;
+    console.error('Error fetching category from API:', error);
+    console.log('Falling back to localStorage');
+    return getCategoryByNameLocal(name);
   }
 };
 
-export const createCategory = async (name, color, icon = '') => {
+export const createCategory = async (name, color = '', icon = '') => {
   try {
     const response = await fetch(`${API_BASE_URL}/categories`, {
       method: 'POST',
@@ -62,11 +66,15 @@ export const createCategory = async (name, color, icon = '') => {
       },
       body: JSON.stringify({ name, color, icon }),
     });
-    if (!response.ok) throw new Error('Failed to create category');
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return createCategoryLocal(name, color, icon);
+    }
     return await response.json();
   } catch (error) {
-    console.error('Error creating category:', error);
-    throw error;
+    console.error('Error creating category via API:', error);
+    console.log('Falling back to localStorage');
+    return createCategoryLocal(name, color, icon);
   }
 };
 
@@ -75,11 +83,14 @@ export const deleteCategory = async (id) => {
     const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete category');
+    if (!response.ok) {
+      console.warn('API call failed, falling back to localStorage');
+      return deleteCategoryLocal(id);
+    }
     return true;
   } catch (error) {
-    console.error('Error deleting category:', error);
-    throw error;
+    console.error('Error deleting category via API:', error);
+    console.log('Falling back to localStorage');
+    return deleteCategoryLocal(id);
   }
-};
-*/ 
+}; 
