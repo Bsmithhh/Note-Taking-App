@@ -1,10 +1,25 @@
 // Authentication service - handles user authentication and session management
 // Connected to the Node.js backend API
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+// Get API URL from environment variable or use default
+const getApiBaseUrl = () => {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // In browser, check for environment variable or use default
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3001/api'
+      : null; // In production, we'll use localStorage fallback
+  }
+  // In Node.js environment (build time)
+  return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Check if we're in production (Vercel) and backend is not available
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const isProduction = typeof window !== 'undefined' && 
+  window.location.hostname !== 'localhost' && 
+  window.location.hostname !== '127.0.0.1';
 
 /**
  * Register a new user
@@ -64,40 +79,48 @@ export const registerUser = async (userData) => {
     }
   }
 
-  // Try backend API
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+  // Try backend API if available
+  if (API_BASE_URL) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.success) {
-      // Store token in localStorage
-      localStorage.setItem('authToken', data.data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
-      
-      return {
-        success: true,
-        user: data.data.user,
-        token: data.data.token
-      };
-    } else {
+      if (data.success) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+        
+        return {
+          success: true,
+          user: data.data.user,
+          token: data.data.token
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || 'Registration failed'
+        };
+      }
+    } catch (error) {
       return {
         success: false,
-        error: data.message || 'Registration failed'
+        error: 'Registration failed: ' + error.message
       };
     }
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Registration failed: ' + error.message
-    };
   }
+  
+  // If no API available, return error
+  return {
+    success: false,
+    error: 'Backend not available'
+  };
 };
 
 /**
@@ -140,40 +163,48 @@ export const loginUser = async (credentials) => {
     }
   }
 
-  // Try backend API
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+  // Try backend API if available
+  if (API_BASE_URL) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.success) {
-      // Store token in localStorage
-      localStorage.setItem('authToken', data.data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
-      
-      return {
-        success: true,
-        user: data.data.user,
-        token: data.data.token
-      };
-    } else {
+      if (data.success) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+        
+        return {
+          success: true,
+          user: data.data.user,
+          token: data.data.token
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || 'Login failed'
+        };
+      }
+    } catch (error) {
       return {
         success: false,
-        error: data.message || 'Login failed'
+        error: 'Login failed: ' + error.message
       };
     }
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Login failed: ' + error.message
-    };
   }
+  
+  // If no API available, return error
+  return {
+    success: false,
+    error: 'Backend not available'
+  };
 };
 
 /**
