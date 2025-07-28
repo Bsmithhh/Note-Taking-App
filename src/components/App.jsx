@@ -86,7 +86,7 @@ function App() {
 
   const handleNoteSave = (noteData) => {
     if (noteData.id) {
-      editNote(noteData.id, noteData);
+      editNote(noteData.id, noteData.title, noteData.content, noteData.category);
     } else {
       createNote(noteData.title, noteData.content, noteData.category);
     }
