@@ -18,6 +18,7 @@ import { getAllNotes, createNote, editNote, deleteNote, importNotes } from '../s
 import { getAllCategories, createCategory, deleteCategory } from '../services/categoryService';
 import { fullTextSearch } from '../services/searchService';
 import { isAuthenticated, getCurrentUser } from '../services/authService';
+import './Toolbar.css';
 
 function App() {
   const [notes, setNotes] = useState([]);
@@ -253,22 +254,68 @@ function App() {
           {/* Sidebar Overlay for Mobile */}
           {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
-          {/* Editor Container */}
-          <div className="editor-container">
-            {currentNote ? (
-              <NoteEditor 
-                note={currentNote}
-                categories={categories}
-                onSave={handleNoteSave}
-                onDelete={handleNoteDelete}
-              />
-            ) : (
-              <div className="empty-editor">
-                <div className="empty-editor-icon">📝</div>
-                <h2>Welcome to Bear Notes</h2>
-                <p>Select a note from the sidebar or create a new one to get started.</p>
+          {/* Main Content Area */}
+          <div className="main-content">
+            {/* Toolbar */}
+            <div className="toolbar">
+              <div className="toolbar-left">
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('export')}
+                  title="Export Notes"
+                >
+                  📤 Export
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('import')}
+                  title="Import Notes"
+                >
+                  📥 Import
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('backup')}
+                  title="Backup & Restore"
+                >
+                  💾 Backup
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('statistics')}
+                  title="View Statistics"
+                >
+                  📊 Statistics
+                </button>
               </div>
-            )}
+              <div className="toolbar-right">
+                <button 
+                  className="toolbar-button profile-btn"
+                  onClick={() => openModal('profile')}
+                  title="User Profile"
+                >
+                  👤 {user.username}
+                </button>
+              </div>
+            </div>
+
+            {/* Editor Container */}
+            <div className="editor-container">
+              {currentNote ? (
+                <NoteEditor 
+                  note={currentNote}
+                  categories={categories}
+                  onSave={handleNoteSave}
+                  onDelete={handleNoteDelete}
+                />
+              ) : (
+                <div className="empty-editor">
+                  <div className="empty-editor-icon">📝</div>
+                  <h2>Welcome to Bear Notes</h2>
+                  <p>Select a note from the sidebar or create a new one to get started.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
