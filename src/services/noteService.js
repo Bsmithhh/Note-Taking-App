@@ -18,18 +18,8 @@ import { getAuthToken } from './authService.js';
 
 // Get API URL from environment variable or use default
 const getApiBaseUrl = () => {
-  // Check if we're in a browser environment
-  if (typeof window !== 'undefined') {
-    // In browser, check for environment variable or use default
-    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:3001/api'
-      : 'https://note-taking-app-production-7468.up.railway.app/api'; // Production Railway backend
-  }
-  // In Node.js environment (build time) - only access process.env if it exists
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-  }
-  return 'http://localhost:3001/api';
+  // Always use Railway backend for now since local backend is not running
+  return 'https://note-taking-app-production-7468.up.railway.app/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

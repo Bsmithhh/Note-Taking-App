@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <button onclick="testAuth()">Test Authentication</button>
+    <button onclick="testCreateNote()">Test Create Note</button>
+    <div id="output"></div>
+
+    <script>
+        const API_BASE_URL = 'https://note-taking-app-production-7468.up.railway.app/api';
+        
+        function log(message) {
+            document.getElementById('output').innerHTML += '<p>' + message + '</p>';
+        }
+
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        async function testAuth() {
+            const token = getAuthToken();
+            log('Auth Token: ' + (token ? 'Present' : 'Missing'));
+            
+            if (!token) {
+                log('ERROR: No authentication token found. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/notes`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                log('API Response: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+
+        async function testCreateNote() {
+            const token = getAuthToken();
+            
+            if (!token) {
+                log('ERROR: No authentication token found. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Note',
+                        content: 'This is a test note',
+                        category: 'Test'
+                    })
+                });
+                
+                const data = await response.json();
+                log('Create Note Response: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html> 
