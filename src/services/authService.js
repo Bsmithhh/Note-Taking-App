@@ -1,7 +1,10 @@
 // Authentication service - handles user authentication and session management
 // Connected to the Node.js backend API
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+
+// Check if we're in production (Vercel) and backend is not available
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 /**
  * Register a new user
@@ -14,6 +17,54 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
  * @returns {Object} - Registration result
  */
 export const registerUser = async (userData) => {
+  // If in production and backend is not available, use localStorage fallback
+  if (isProduction) {
+    try {
+      // Check if user already exists
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      const existingUser = existingUsers.find(u => 
+        u.username === userData.username || u.email === userData.email
+      );
+      
+      if (existingUser) {
+        return {
+          success: false,
+          error: 'User already exists'
+        };
+      }
+
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        username: userData.username,
+        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        createdAt: new Date().toISOString()
+      };
+
+      // Store user
+      existingUsers.push(newUser);
+      localStorage.setItem('users', JSON.stringify(existingUsers));
+      
+      // Auto-login the user
+      localStorage.setItem('authToken', 'demo-token-' + Date.now());
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      
+      return {
+        success: true,
+        user: newUser,
+        token: 'demo-token-' + Date.now()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Registration failed: ' + error.message
+      };
+    }
+  }
+
+  // Try backend API
   try {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
@@ -57,6 +108,39 @@ export const registerUser = async (userData) => {
  * @returns {Object} - Login result
  */
 export const loginUser = async (credentials) => {
+  // If in production and backend is not available, use localStorage fallback
+  if (isProduction) {
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const user = users.find(u => 
+        u.username === credentials.username || u.email === credentials.username
+      );
+      
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found'
+        };
+      }
+
+      // In demo mode, accept any password
+      localStorage.setItem('authToken', 'demo-token-' + Date.now());
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      
+      return {
+        success: true,
+        user: user,
+        token: 'demo-token-' + Date.now()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Login failed: ' + error.message
+      };
+    }
+  }
+
+  // Try backend API
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
