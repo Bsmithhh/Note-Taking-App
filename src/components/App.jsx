@@ -66,7 +66,7 @@ function App() {
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      const results = fullTextSearch(query);
+      const results = fullTextSearch(query, notes);
       setSearchResults(results);
       setIsSearching(true);
     } else {
