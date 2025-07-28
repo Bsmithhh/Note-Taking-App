@@ -36,9 +36,7 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
     return words.join(' ');
   };
 
-  const displayNotes = isSearching ? notes : notes;
-
-  if (displayNotes.length === 0) {
+  if (notes.length === 0) {
     return (
       <div className="empty-state">
         <div className="empty-icon">📝</div>
@@ -52,11 +50,11 @@ const NotesList = ({ notes, currentNote, onNoteSelect, onNoteDelete, isSearching
     <>
       {isSearching && (
         <div className="search-results-header">
-          Found {displayNotes.length} note{displayNotes.length !== 1 ? 's' : ''}
+          Found {notes.length} note{notes.length !== 1 ? 's' : ''}
         </div>
       )}
       
-      {displayNotes.map(note => (
+      {notes.map(note => (
         <div
           key={note.id}
           className={`note-item ${currentNote?.id === note.id ? 'active' : ''}`}
