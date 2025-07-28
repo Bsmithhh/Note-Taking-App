@@ -1,204 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const Note = require('../models/Note');
+const { validate } = require('../utils/validation');
 
-// GET /api/notes - Get all notes for user
-router.get('/', auth, async (req, res) => {
-  try {
-    const { page = 1, limit = 20, category, sortBy = 'lastModified', sortOrder = 'desc' } = req.query;
-    
-    const query = { userId: req.user._id };
-    if (category) query.category = category;
-    
-    const sortObject = {};
-    sortObject[sortBy] = sortOrder === 'desc' ? -1 : 1;
-    
-    const notes = await Note.find(query)
-      .sort(sortObject)
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .lean();
-    
-    const total = await Note.countDocuments(query);
-    
-    res.json({
-      notes,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalNotes: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch notes' });
-  }
-});
+// Import note controller (we'll create this next)
+const noteController = require('../controllers/noteController');
+
+// All routes require authentication
+router.use(auth);
+
+// GET /api/notes - Get all notes with pagination and filters
+router.get('/', validate('getNotes'), noteController.getNotes);
 
 // GET /api/notes/:id - Get single note
-router.get('/:id', auth, async (req, res) => {
-  try {
-    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
-    
-    if (!note) {
-      return res.status(404).json({ error: 'Note not found' });
-    }
-    
-    res.json(note);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch note' });
-  }
-});
+router.get('/:id', validate('getNote'), noteController.getNote);
 
 // POST /api/notes - Create new note
-router.post('/', auth, async (req, res) => {
-  try {
-    const { title, content, category, tags } = req.body;
-    
-    if (!title || !content) {
-      return res.status(400).json({ error: 'Title and content are required' });
-    }
-    
-    const note = new Note({
-      title,
-      content,
-      category: category || '',
-      tags: tags || [],
-      userId: req.user._id
-    });
-    
-    await note.save();
-    res.status(201).json(note);
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ error: error.message });
-    }
-    res.status(500).json({ error: 'Failed to create note' });
-  }
-});
+router.post('/', validate('createNote'), noteController.createNote);
 
 // PUT /api/notes/:id - Update note
-router.put('/:id', auth, async (req, res) => {
-  try {
-    const { title, content, category, tags, isArchived, isLocked } = req.body;
-    
-    const note = await Note.findOne({ _id: req.params.id, userId: req.user._id });
-    
-    if (!note) {
-      return res.status(404).json({ error: 'Note not found' });
-    }
-    
-    if (title !== undefined) note.title = title;
-    if (content !== undefined) note.content = content;
-    if (category !== undefined) note.category = category;
-    if (tags !== undefined) note.tags = tags;
-    if (isArchived !== undefined) note.isArchived = isArchived;
-    if (isLocked !== undefined) note.isLocked = isLocked;
-    
-    await note.save();
-    res.json(note);
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ error: error.message });
-    }
-    res.status(500).json({ error: 'Failed to update note' });
-  }
-});
+router.put('/:id', validate('updateNote'), noteController.updateNote);
 
 // DELETE /api/notes/:id - Delete note
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const note = await Note.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-    
-    if (!note) {
-      return res.status(404).json({ error: 'Note not found' });
-    }
-    
-    res.json({ message: 'Note deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete note' });
-  }
-});
+router.delete('/:id', validate('getNote'), noteController.deleteNote);
 
-// GET /api/notes/stats/overview - Get note statistics
-router.get('/stats/overview', auth, async (req, res) => {
-  try {
-    const totalNotes = await Note.countDocuments({ userId: req.user._id });
-    const archivedNotes = await Note.countDocuments({ userId: req.user._id, isArchived: true });
-    const lockedNotes = await Note.countDocuments({ userId: req.user._id, isLocked: true });
-    
-    // Get notes created in last 7 days
-    const lastWeek = new Date();
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    const recentNotes = await Note.countDocuments({
-      userId: req.user._id,
-      createdAt: { $gte: lastWeek }
-    });
-    
-    // Get total word count
-    const notes = await Note.find({ userId: req.user._id }).select('title content');
-    const totalWords = notes.reduce((sum, note) => {
-      const titleWords = (note.title || '').split(/\s+/).filter(word => word.length > 0).length;
-      const contentWords = (note.content || '').split(/\s+/).filter(word => word.length > 0).length;
-      return sum + titleWords + contentWords;
-    }, 0);
-    
-    res.json({
-      totalNotes,
-      archivedNotes,
-      lockedNotes,
-      recentNotes,
-      totalWords,
-      averageWordsPerNote: totalNotes > 0 ? Math.round(totalWords / totalNotes) : 0
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch statistics' });
-  }
-});
+// PATCH /api/notes/:id/pin - Toggle pin status
+router.patch('/:id/pin', validate('getNote'), noteController.togglePin);
 
-// POST /api/notes/bulk - Bulk operations
-router.post('/bulk', auth, async (req, res) => {
-  try {
-    const { operation, noteIds, data } = req.body;
-    
-    if (!operation || !noteIds || !Array.isArray(noteIds)) {
-      return res.status(400).json({ error: 'Invalid bulk operation parameters' });
-    }
-    
-    let result;
-    
-    switch (operation) {
-      case 'archive':
-        result = await Note.updateMany(
-          { _id: { $in: noteIds }, userId: req.user._id },
-          { isArchived: true }
-        );
-        break;
-      case 'unarchive':
-        result = await Note.updateMany(
-          { _id: { $in: noteIds }, userId: req.user._id },
-          { isArchived: false }
-        );
-        break;
-      case 'delete':
-        result = await Note.deleteMany({ _id: { $in: noteIds }, userId: req.user._id });
-        break;
-      case 'update':
-        result = await Note.updateMany(
-          { _id: { $in: noteIds }, userId: req.user._id },
-          data
-        );
-        break;
-      default:
-        return res.status(400).json({ error: 'Invalid operation' });
-    }
-    
-    res.json({ message: `Bulk operation completed`, modifiedCount: result.modifiedCount || result.deletedCount });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to perform bulk operation' });
-  }
-});
+// PATCH /api/notes/:id/archive - Toggle archive status
+router.patch('/:id/archive', validate('getNote'), noteController.toggleArchive);
+
+// PATCH /api/notes/:id/public - Toggle public status
+router.patch('/:id/public', validate('getNote'), noteController.togglePublic);
+
+// POST /api/notes/:id/duplicate - Duplicate note
+router.post('/:id/duplicate', validate('getNote'), noteController.duplicateNote);
+
+// GET /api/notes/search/:query - Search notes
+router.get('/search/:query', noteController.searchNotes);
+
+// GET /api/notes/stats - Get note statistics
+router.get('/stats/overview', noteController.getNoteStats);
+
+// POST /api/notes/bulk-delete - Bulk delete notes
+router.post('/bulk-delete', noteController.bulkDeleteNotes);
+
+// POST /api/notes/bulk-move - Bulk move notes to category
+router.post('/bulk-move', noteController.bulkMoveNotes);
+
+// POST /api/notes/import - Import notes from file
+router.post('/import', noteController.importNotes);
+
+// GET /api/notes/export - Export notes
+router.get('/export', noteController.exportNotes);
 
 module.exports = router; 

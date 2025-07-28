@@ -1,43 +1,118 @@
 # Bear Notes Backend API
 
-A Node.js/Express backend API for the Bear Notes application with MongoDB database and JWT authentication.
+A robust Node.js backend API for the Bear Notes application, built with Express.js and MongoDB.
 
-## Features
+## 🚀 Features
 
-- **User Authentication**: Register, login, profile management with JWT
-- **Notes Management**: CRUD operations for notes with categories and tags
-- **Categories**: Create, update, delete categories with color coding
-- **Advanced Search**: Full-text search with relevance scoring
-- **Statistics**: Note and category usage analytics
-- **Security**: Password hashing, JWT tokens, input validation
+- **User Authentication**: JWT-based authentication with registration, login, and profile management
+- **Note Management**: Full CRUD operations for notes with rich text support
+- **Category Management**: Organize notes with customizable categories
+- **Search & Filtering**: Advanced search capabilities with pagination
+- **Statistics & Analytics**: Comprehensive user and note statistics
+- **Admin Panel**: User management and system-wide statistics
+- **Security**: Rate limiting, input validation, and security headers
+- **File Upload**: Support for note attachments
+- **Import/Export**: Data portability features
 
-## Tech Stack
+## 📋 Prerequisites
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Security**: bcryptjs, helmet, cors
-- **Validation**: Mongoose schema validation
+- Node.js (v16 or higher)
+- MongoDB (local or MongoDB Atlas)
+- npm or yarn
 
-## API Endpoints
+## 🛠️ Installation
+
+1. **Clone the repository and navigate to backend:**
+   ```bash
+   cd backend
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   ```bash
+   cp env.example .env
+   ```
+   
+   Edit `.env` with your configuration:
+   ```env
+   # Server Configuration
+   PORT=5000
+   NODE_ENV=development
+
+   # MongoDB Configuration
+   MONGODB_URI=mongodb://localhost:27017/bear-notes
+   # For MongoDB Atlas: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/bear-notes
+
+   # JWT Configuration
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_EXPIRES_IN=7d
+
+   # Security
+   BCRYPT_ROUNDS=12
+   RATE_LIMIT_WINDOW_MS=900000
+   RATE_LIMIT_MAX_REQUESTS=100
+
+   # CORS Configuration
+   CORS_ORIGIN=http://localhost:3000
+
+   # File Upload Configuration
+   MAX_FILE_SIZE=10485760
+   UPLOAD_PATH=./uploads
+   ```
+
+4. **Start the server:**
+   ```bash
+   # Development mode
+   npm run dev
+
+   # Production mode
+   npm start
+   ```
+
+## 🗄️ Database Setup
+
+### Local MongoDB
+1. Install MongoDB Community Edition
+2. Start MongoDB service
+3. Create database: `bear-notes`
+
+### MongoDB Atlas (Recommended)
+1. Create a MongoDB Atlas account
+2. Create a new cluster
+3. Get your connection string
+4. Update `MONGODB_URI` in your `.env` file
+
+## 📚 API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user profile
+- `GET /api/auth/profile` - Get user profile
 - `PUT /api/auth/profile` - Update user profile
-- `PUT /api/auth/password` - Change password
+- `PUT /api/auth/change-password` - Change password
+- `POST /api/auth/refresh` - Refresh JWT token
 - `POST /api/auth/logout` - Logout user
 
 ### Notes
-- `GET /api/notes` - Get all notes (with pagination)
+- `GET /api/notes` - Get all notes (with pagination & filters)
 - `GET /api/notes/:id` - Get single note
 - `POST /api/notes` - Create new note
 - `PUT /api/notes/:id` - Update note
 - `DELETE /api/notes/:id` - Delete note
+- `PATCH /api/notes/:id/pin` - Toggle pin status
+- `PATCH /api/notes/:id/archive` - Toggle archive status
+- `PATCH /api/notes/:id/public` - Toggle public status
+- `POST /api/notes/:id/duplicate` - Duplicate note
+- `GET /api/notes/search/:query` - Search notes
 - `GET /api/notes/stats/overview` - Get note statistics
-- `POST /api/notes/bulk` - Bulk operations
+- `POST /api/notes/bulk-delete` - Bulk delete notes
+- `POST /api/notes/bulk-move` - Bulk move notes
+- `POST /api/notes/import` - Import notes
+- `GET /api/notes/export` - Export notes
 
 ### Categories
 - `GET /api/categories` - Get all categories
@@ -45,163 +120,136 @@ A Node.js/Express backend API for the Bear Notes application with MongoDB databa
 - `POST /api/categories` - Create new category
 - `PUT /api/categories/:id` - Update category
 - `DELETE /api/categories/:id` - Delete category
-- `GET /api/categories/stats/usage` - Get category statistics
-- `POST /api/categories/:id/merge` - Merge categories
+- `GET /api/categories/stats/overview` - Get category statistics
+- `POST /api/categories/reorder` - Reorder categories
+- `POST /api/categories/:id/merge` - Merge category
 
-### Search
-- `GET /api/search` - Search notes
-- `GET /api/search/suggestions` - Get search suggestions
-- `GET /api/search/advanced` - Advanced search
-- `GET /api/search/history` - Get search history
-- `POST /api/search/history` - Save search to history
-- `DELETE /api/search/history` - Clear search history
+### Users (Admin Only)
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+- `GET /api/users/stats/overview` - Get user statistics
+- `POST /api/users/:id/activate` - Activate user
+- `POST /api/users/:id/deactivate` - Deactivate user
 
-## Setup Instructions
+## 🔐 Authentication
 
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+All protected routes require a JWT token in the Authorization header:
+```
+Authorization: Bearer <your-jwt-token>
+```
 
-2. **Environment Configuration**
-   ```bash
-   cp env.example .env
-   # Edit .env with your configuration
-   ```
+## 📊 Data Models
 
-3. **Database Setup**
-   - Install MongoDB locally, or
-   - Use MongoDB Atlas (cloud database)
-   - Update `MONGODB_URI` in `.env`
+### User
+- `username` (unique)
+- `email` (unique)
+- `password` (hashed)
+- `firstName`, `lastName`
+- `avatar`
+- `isActive`
+- `preferences` (theme, language, notifications)
+- `lastLogin`
 
-4. **Start Development Server**
-   ```bash
-   npm run dev
-   ```
+### Note
+- `userId` (reference to User)
+- `title`
+- `content` (rich text)
+- `category` (reference to Category)
+- `tags`
+- `isPinned`, `isArchived`, `isPublic`
+- `priority` (low, medium, high)
+- `color`
+- `attachments`
+- `metadata` (word count, character count, reading time)
+- `version`
+- `history` (edit history)
 
-5. **Production Build**
-   ```bash
-   npm start
-   ```
+### Category
+- `userId` (reference to User)
+- `name` (unique per user)
+- `description`
+- `color`
+- `icon`
+- `isDefault`, `isActive`
+- `parentCategory` (for nested categories)
+- `order`
+- `metadata` (note count, last used)
 
-## Environment Variables
+## 🛡️ Security Features
+
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: bcrypt with configurable rounds
+- **Input Validation**: Comprehensive request validation
+- **Rate Limiting**: Configurable rate limiting per IP
+- **CORS Protection**: Configurable cross-origin resource sharing
+- **Security Headers**: Helmet.js for security headers
+- **SQL Injection Protection**: MongoDB with parameterized queries
+- **XSS Protection**: Input sanitization and validation
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## 📝 Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PORT` | Server port | `3001` |
-| `NODE_ENV` | Environment | `development` |
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/bearnotes` |
-| `JWT_SECRET` | JWT signing secret | `your-secret-key` |
-| `FRONTEND_URL` | Frontend URL for CORS | `http://localhost:3000` |
+| `PORT` | Server port | 5000 |
+| `NODE_ENV` | Environment | development |
+| `MONGODB_URI` | MongoDB connection string | mongodb://localhost:27017/bear-notes |
+| `JWT_SECRET` | JWT signing secret | Required |
+| `JWT_EXPIRES_IN` | JWT expiration time | 7d |
+| `BCRYPT_ROUNDS` | Password hashing rounds | 12 |
+| `RATE_LIMIT_WINDOW_MS` | Rate limit window | 900000 (15 min) |
+| `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | 100 |
+| `CORS_ORIGIN` | Allowed CORS origin | http://localhost:3000 |
+| `MAX_FILE_SIZE` | Max file upload size | 10485760 (10MB) |
+| `UPLOAD_PATH` | File upload directory | ./uploads |
 
-## Database Models
+## 🚀 Deployment
 
-### User
-- Username, email, password
-- Preferences (theme, language, auto-save)
-- Account status and timestamps
+### Heroku
+1. Create Heroku app
+2. Set environment variables
+3. Deploy with Git
 
-### Note
-- Title, content, category
-- Tags, archive/lock status
-- User association and timestamps
-- Full-text search indexing
+### Railway
+1. Connect GitHub repository
+2. Set environment variables
+3. Deploy automatically
 
-### Category
-- Name, color, icon
-- User association
-- Note count tracking
+### Vercel
+1. Import project
+2. Set environment variables
+3. Deploy
 
-## Security Features
+## 📈 Monitoring
 
-- **Password Hashing**: bcryptjs with salt rounds
-- **JWT Authentication**: Secure token-based auth
-- **Input Validation**: Mongoose schema validation
-- **CORS Protection**: Configurable cross-origin requests
-- **Helmet**: Security headers
-- **Rate Limiting**: Built-in Express rate limiting
+- **Health Check**: `GET /health`
+- **Request Logging**: Morgan HTTP logger
+- **Error Handling**: Comprehensive error handling with logging
+- **Performance**: Optimized database queries with indexes
 
-## Development
-
-### Project Structure
-```
-backend/
-├── src/
-│   ├── config/
-│   │   └── database.js
-│   ├── controllers/
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── models/
-│   │   ├── Note.js
-│   │   ├── Category.js
-│   │   └── User.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── notes.js
-│   │   ├── categories.js
-│   │   └── search.js
-│   └── server.js
-├── package.json
-└── README.md
-```
-
-### API Response Format
-
-**Success Response:**
-```json
-{
-  "message": "Operation successful",
-  "data": { ... }
-}
-```
-
-**Error Response:**
-```json
-{
-  "error": "Error message",
-  "details": "Additional error details"
-}
-```
-
-## Deployment
-
-### Local Development
-```bash
-npm run dev
-```
-
-### Production
-```bash
-npm start
-```
-
-### Docker (Optional)
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 3001
-CMD ["npm", "start"]
-```
-
-## Testing
-
-Run tests (when implemented):
-```bash
-npm test
-```
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Add tests
 5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details 
+MIT License - see LICENSE file for details
+
+## 🆘 Support
+
+For support, please open an issue in the GitHub repository or contact the development team. 

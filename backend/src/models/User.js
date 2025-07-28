@@ -7,8 +7,9 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Username is required'],
     unique: true,
     trim: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [30, 'Username cannot be more than 30 characters']
+    minlength: [3, 'Username must be at least 3 characters long'],
+    maxlength: [30, 'Username cannot exceed 30 characters'],
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
   },
   email: {
     type: String,
@@ -21,11 +22,21 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
+    minlength: [6, 'Password must be at least 6 characters long']
+  },
+  firstName: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'First name cannot exceed 50 characters']
+  },
+  lastName: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'Last name cannot exceed 50 characters']
   },
   avatar: {
     type: String,
-    default: ''
+    default: null
   },
   isActive: {
     type: Boolean,
@@ -33,7 +44,7 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date,
-    default: Date.now
+    default: null
   },
   preferences: {
     theme: {
@@ -45,14 +56,9 @@ const userSchema = new mongoose.Schema({
       type: String,
       default: 'en'
     },
-    autoSave: {
+    notifications: {
       type: Boolean,
       default: true
-    },
-    backupFrequency: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly'],
-      default: 'weekly'
     }
   }
 }, {
@@ -61,35 +67,32 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ createdAt: -1 });
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username;
+});
 
-// Virtual for user statistics
-userSchema.virtual('stats').get(async function() {
-  const Note = mongoose.model('Note');
-  const Category = mongoose.model('Category');
-  
-  const [noteCount, categoryCount] = await Promise.all([
-    Note.countDocuments({ userId: this._id }),
-    Category.countDocuments({ userId: this._id })
-  ]);
-  
+// Virtual for user stats
+userSchema.virtual('stats').get(function() {
   return {
-    noteCount,
-    categoryCount,
-    memberSince: this.createdAt,
-    lastLogin: this.lastLogin
+    notesCount: 0, // Will be populated by aggregation
+    categoriesCount: 0, // Will be populated by aggregation
+    lastActivity: this.updatedAt
   };
 });
 
+// Index for better query performance
+userSchema.index({ username: 1, email: 1 });
+userSchema.index({ createdAt: -1 });
+
 // Pre-save middleware to hash password
 userSchema.pre('save', async function(next) {
+  // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
-  
+
   try {
-    const salt = await bcrypt.genSalt(12);
+    // Hash password with cost of 12
+    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -97,35 +100,51 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Instance method to compare password
+// Instance method to check password
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Instance method to update last login
-userSchema.methods.updateLastLogin = function() {
-  this.lastLogin = new Date();
-  return this.save();
+// Instance method to get public profile (without sensitive data)
+userSchema.methods.getPublicProfile = function() {
+  const userObject = this.toObject();
+  delete userObject.password;
+  delete userObject.__v;
+  return userObject;
 };
 
-// Static method to create default categories for new user
-userSchema.statics.createDefaultCategories = async function(userId) {
-  const Category = mongoose.model('Category');
-  const defaultCategories = [
-    { name: 'Personal', color: '#FF6B6B', icon: '👤' },
-    { name: 'Work', color: '#4ECDC4', icon: '💼' },
-    { name: 'Study', color: '#45B7D1', icon: '📚' },
-    { name: 'Ideas', color: '#96CEB4', icon: '💡' },
-    { name: 'Archive', color: '#FFEAA7', icon: '📦' }
-  ];
-  
-  const categories = defaultCategories.map(cat => ({
-    ...cat,
-    userId,
-    isDefault: true
-  }));
-  
-  return Category.insertMany(categories);
+// Static method to find user by credentials
+userSchema.statics.findByCredentials = async function(username, password) {
+  const user = await this.findOne({
+    $or: [
+      { username: username },
+      { email: username }
+    ],
+    isActive: true
+  });
+
+  if (!user) {
+    throw new Error('Invalid login credentials');
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    throw new Error('Invalid login credentials');
+  }
+
+  return user;
+};
+
+// Static method to check if username exists
+userSchema.statics.usernameExists = async function(username) {
+  const user = await this.findOne({ username });
+  return !!user;
+};
+
+// Static method to check if email exists
+userSchema.statics.emailExists = async function(email) {
+  const user = await this.findOne({ email });
+  return !!user;
 };
 
 module.exports = mongoose.model('User', userSchema); 
