@@ -35,7 +35,6 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:8090',
   'http://localhost:3000',
-  'https://brandennotes-bsapw1r80-branden-smiths-projects.vercel.app',
   'https://brandennotes.vercel.app',
   'https://brandennotes-git-main-branden-smiths-projects.vercel.app'
 ];
@@ -45,9 +44,15 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Allow localhost origins
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
-    } else {
+    }
+    // Allow any Vercel preview deployment for brandennotes
+    else if (origin.includes('brandennotes') && origin.includes('vercel.app')) {
+      callback(null, true);
+    }
+    else {
       // Log the blocked origin for debugging
       console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
