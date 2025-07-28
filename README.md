@@ -1,119 +1,258 @@
-# BrandenNotes - A Bear Notes Clone
+# Bear Notes - Full Stack Note-Taking Application
 
-A modern, responsive note-taking application built with vanilla JavaScript, inspired by Bear Notes. Features a clean interface, category organization, and powerful search capabilities.
+A modern, full-stack note-taking application built with React frontend and Node.js backend, featuring advanced search, categories, export/import, backup, and statistics.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **Note Creation & Editing**: Create, edit, and delete notes with real-time saving
-- **Category Management**: Organize notes with custom categories, colors, and icons
-- **Search & Filter**: Search through notes by title and content, filter by categories
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Local Storage**: All data is stored locally in your browser
+- **Note Management**: Create, edit, delete, and organize notes
+- **Categories**: Color-coded categories with icons
+- **Advanced Search**: Full-text search with relevance scoring
+- **Search History**: Track and reuse recent searches
+- **Export/Import**: Multiple formats (JSON, Markdown, PDF)
+- **Backup & Restore**: Automatic backups with history
+- **Statistics Dashboard**: Analytics and insights
 
-### Organization Features
-- **Smart Categories**: Pre-built categories (All, Untagged, Todo, Today, Locked, Archive, Trash)
-- **Custom Categories**: Create your own categories with custom colors and emoji icons
-- **Note Counts**: See how many notes are in each category
-- **Timestamps**: Track when notes were created and last modified
+### Technical Features
+- **React Frontend**: Modern UI with component-based architecture
+- **Node.js Backend**: RESTful API with Express.js
+- **MongoDB Database**: Scalable NoSQL database
+- **JWT Authentication**: Secure user authentication
+- **Real-time Updates**: Live search and filtering
+- **Responsive Design**: Mobile-friendly interface
+- **Comprehensive Testing**: 137+ unit tests
 
-### User Experience
-- **Clean Interface**: Minimalist design focused on content
-- **Mobile-First**: Responsive sidebar that adapts to mobile screens
-- **Keyboard Shortcuts**: Efficient note-taking workflow
-- **Auto-Save**: Changes are saved automatically as you type
+## 🛠️ Tech Stack
 
-## 🛠️ Technology Stack
+### Frontend
+- **React 18** - UI framework
+- **React Router** - Client-side routing
+- **Webpack** - Module bundler
+- **CSS3** - Styling with modern features
+- **LocalStorage** - Client-side data persistence
 
-- **Frontend**: Vanilla JavaScript (ES6+)
-- **Build Tool**: Webpack 5
-- **Styling**: CSS3 with modern layout techniques
-- **Testing**: Jest for unit testing
-- **Storage**: Browser localStorage
-- **Development**: Babel for ES6+ transpilation
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - NoSQL database
+- **Mongoose** - Object Data Modeling
+- **JWT** - Authentication tokens
+- **bcryptjs** - Password hashing
+- **Helmet** - Security middleware
 
-## 📦 Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd BrandenNotes
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:8080` (or the port shown in your terminal)
-
-## 🧪 Testing
-
-Run the test suite:
-```bash
-npm run test
-```
-
-The app includes comprehensive tests for:
-- Note creation, editing, and deletion
-- Category management
-- Search functionality
-- Data persistence
+### Development Tools
+- **Jest** - Testing framework
+- **ESLint** - Code linting
+- **Babel** - JavaScript compiler
+- **Nodemon** - Development server
 
 ## 📁 Project Structure
 
 ```
 BrandenNotes/
-├── js/                    # JavaScript modules
-│   ├── app.js            # Main application controller
-│   ├── note.js           # Note management functions
-│   ├── category.js       # Category management functions
-│   ├── search.js         # Search functionality
-│   └── __tests__/        # Test files
-├── public/               # Static assets
-├── index.html            # Main HTML file
-├── styles.css            # Main stylesheet
-├── webpack.config.js     # Webpack configuration
-├── package.json          # Dependencies and scripts
-└── README.md            # This file
+├── src/                          # React frontend
+│   ├── components/               # React components
+│   │   ├── App.jsx              # Main app component
+│   │   ├── Sidebar.jsx          # Category sidebar
+│   │   ├── NotesList.jsx        # Notes list view
+│   │   ├── NoteEditor.jsx       # Note editing interface
+│   │   ├── SearchBar.jsx        # Search functionality
+│   │   ├── Modal.jsx            # Reusable modal component
+│   │   └── ...                  # Other components
+│   ├── services/                # API service layer
+│   │   ├── noteService.js       # Note operations
+│   │   ├── categoryService.js   # Category operations
+│   │   └── searchService.js     # Search operations
+│   └── index.jsx                # React entry point
+├── js/                          # Legacy vanilla JS modules
+│   ├── app.js                   # Main application logic
+│   ├── note.js                  # Note management
+│   ├── category.js              # Category management
+│   ├── search.js                # Search functionality
+│   └── export.js                # Export/import features
+├── backend/                     # Node.js backend
+│   ├── src/
+│   │   ├── models/              # MongoDB models
+│   │   ├── routes/              # API routes
+│   │   ├── middleware/          # Express middleware
+│   │   ├── config/              # Configuration
+│   │   └── server.js            # Express server
+│   └── package.json
+├── js/__tests__/                # Test files
+├── dist/                        # Built files
+└── package.json
 ```
 
-## 🔧 Available Scripts
+## 🚀 Quick Start
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run test` - Run test suite
+### Prerequisites
+- Node.js 16+ 
+- MongoDB (local or Atlas)
+- npm or yarn
 
-## 💾 Data Storage
+### Frontend Setup
+```bash
+# Install dependencies
+npm install
 
-All notes and categories are stored in your browser's localStorage. This means:
-- ✅ No account required
-- ✅ Works offline
-- ✅ Data stays on your device
-- ⚠️ Data is tied to your browser/device
-- ⚠️ Clearing browser data will remove your notes
+# Start development server
+npm run dev
 
-## 🎨 Customization
+# Build for production
+npm run build
+```
 
-### Adding Custom Categories
-1. Click the "Create Category" button in the sidebar
-2. Enter a category name
-3. Choose a color and emoji icon
-4. Click "Create Category"
+### Backend Setup
+```bash
+# Navigate to backend directory
+cd backend
 
-### Styling
-The app uses CSS custom properties for easy theming. Key variables are defined in `styles.css`:
-- `--primary-color`: Main accent color
-- `--background-color`: App background
-- `--text-color`: Primary text color
-- `--sidebar-width`: Sidebar width
+# Install dependencies
+npm install
+
+# Copy environment file
+cp env.example .env
+
+# Edit .env with your configuration
+# Set MONGODB_URI and JWT_SECRET
+
+# Start development server
+npm run dev
+```
+
+### Database Setup
+1. **Local MongoDB**:
+   ```bash
+   # Install MongoDB locally
+   brew install mongodb-community  # macOS
+   # or download from mongodb.com
+   
+   # Start MongoDB
+   mongod
+   ```
+
+2. **MongoDB Atlas** (Recommended):
+   - Create free account at [mongodb.com](https://mongodb.com)
+   - Create cluster and get connection string
+   - Update `MONGODB_URI` in backend `.env`
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get user profile
+
+### Notes Endpoints
+- `GET /api/notes` - Get all notes
+- `POST /api/notes` - Create note
+- `PUT /api/notes/:id` - Update note
+- `DELETE /api/notes/:id` - Delete note
+
+### Categories Endpoints
+- `GET /api/categories` - Get all categories
+- `POST /api/categories` - Create category
+- `PUT /api/categories/:id` - Update category
+- `DELETE /api/categories/:id` - Delete category
+
+### Search Endpoints
+- `GET /api/search` - Search notes
+- `GET /api/search/suggestions` - Get suggestions
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test -- search.test.js
+```
+
+**Test Coverage**: 137+ tests covering:
+- Note operations
+- Category management
+- Search functionality
+- Export/import features
+- Backup and statistics
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+### Backend (Heroku/Railway)
+```bash
+# Set environment variables
+MONGODB_URI=your_mongodb_atlas_uri
+JWT_SECRET=your_jwt_secret
+NODE_ENV=production
+
+# Deploy to Heroku
+heroku create
+git push heroku main
+```
+
+### Database (MongoDB Atlas)
+1. Create free cluster at [mongodb.com](https://mongodb.com)
+2. Get connection string
+3. Update backend environment variables
+
+## 🔧 Configuration
+
+### Environment Variables
+
+**Frontend (.env)**
+```env
+REACT_APP_API_URL=http://localhost:3001/api
+```
+
+**Backend (.env)**
+```env
+PORT=3001
+MONGODB_URI=mongodb://localhost:27017/bearnotes
+JWT_SECRET=your-super-secret-key
+FRONTEND_URL=http://localhost:3000
+```
+
+## 📊 Features in Detail
+
+### Search System
+- **Full-text search** across titles and content
+- **Relevance scoring** based on word matches
+- **Search history** with keyboard navigation
+- **Real-time suggestions** from existing content
+- **Advanced filters** by category, date, tags
+
+### Export/Import
+- **JSON export** for data portability
+- **Markdown export** for documentation
+- **PDF export** for sharing
+- **Import validation** with duplicate handling
+- **Batch operations** for multiple files
+
+### Backup System
+- **Automatic backups** with configurable frequency
+- **Backup history** with timestamps
+- **Export backups** for external storage
+- **Restore functionality** with validation
+- **Cleanup old backups** to save space
+
+### Statistics Dashboard
+- **Note analytics** (count, word count, trends)
+- **Category usage** statistics
+- **Activity reports** with date ranges
+- **Visual charts** and graphs
+- **Export reports** in multiple formats
 
 ## 🤝 Contributing
 
@@ -125,51 +264,19 @@ The app uses CSS custom properties for easy theming. Key variables are defined i
 
 ## 📝 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Inspired by [Bear Notes](https://bear.app/)
-- Built with modern web technologies
-- Designed for simplicity and productivity
+- **Bear Notes** - Inspiration for the UI/UX design
+- **React Team** - Amazing frontend framework
+- **Express.js Team** - Robust backend framework
+- **MongoDB Team** - Powerful NoSQL database
 
-## 🐛 Known Issues
+## 📞 Support
 
-- Notes are stored locally only (no cloud sync)
-- No rich text formatting yet (planned for future versions)
-- No export/import functionality (planned for future versions)
-
-## 🔮 Future Features
-
-### **Phase 1: Advanced Search (In Progress)**
-- [ ] Full-text search with relevance scoring
-- [ ] Search by date ranges and categories
-- [ ] Search history and saved searches
-- [ ] Keyboard shortcuts (Ctrl+K for quick search)
-- [ ] Search term highlighting in results
-
-### **Phase 2: Rich Text Editing & Markdown**
-- [ ] Markdown preview mode
-- [ ] Basic formatting toolbar (bold, italic, lists, links)
-- [ ] Code syntax highlighting
-- [ ] Image paste/upload functionality
-- [ ] HTML to Markdown conversion
-
-### **Phase 3: Data Export & Backup**
-- [ ] Export notes to PDF, Markdown, or JSON
-- [ ] Automatic backup to local storage
-- [ ] Import functionality for migration
-- [ ] Data statistics (word counts, note trends)
-- [ ] Activity reports and analytics
-
-### **Additional Features**
-- [ ] Cloud synchronization
-- [ ] Tags system
-- [ ] Note templates
-- [ ] Dark mode
-- [ ] Note sharing
-- [ ] Mobile app
+For support, email support@bearnotes.com or create an issue in this repository.
 
 ---
 
-**Happy Note-Taking! 📝** 
+**Built with ❤️ for Northeastern University students** 

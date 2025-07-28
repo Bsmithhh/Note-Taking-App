@@ -235,6 +235,12 @@ function validateImportData(data) {
  * @returns {Array} - Merged notes
  */
 function mergeImportedNotes(importedNotes, options = {}) {
+    // Ensure importedNotes is an array
+    if (!Array.isArray(importedNotes)) {
+        console.error('mergeImportedNotes: importedNotes is not an array:', importedNotes);
+        throw new Error('Imported notes must be an array');
+    }
+    
     const mergedNotes = []
     let existingNotes = getAllNotes()
       if(options.duplicateStrategy === 'overwrite'){
@@ -273,11 +279,51 @@ function mergeImportedNotes(importedNotes, options = {}) {
  * @returns {Promise<Object>} - Backup result
  */
 async function createBackup(options = {}) {
-    // TODO: Implement automatic backup
-    // - Export all notes and categories
-    // - Add backup metadata (timestamp, version)
-    // - Store in localStorage or IndexedDB
-    // - Return backup result object
+    try {
+        const notes = getAllNotes();
+        const categories = getAllCategories();
+        const timestamp = new Date().toISOString();
+        const version = '1.0.0';
+        
+        const backup = {
+            metadata: {
+                timestamp,
+                version,
+                noteCount: notes.length,
+                categoryCount: categories.length,
+                createdBy: 'BearNotesApp'
+            },
+            data: {
+                notes,
+                categories
+            }
+        };
+        
+        // Store backup in localStorage
+        const backupHistory = getBackupHistory();
+        backupHistory.unshift(backup);
+        
+        // Keep only the last 10 backups
+        const maxBackups = options.maxBackups || 10;
+        if (backupHistory.length > maxBackups) {
+            backupHistory.splice(maxBackups);
+        }
+        
+        localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+        
+        return {
+            success: true,
+            backup,
+            message: `Backup created successfully with ${notes.length} notes and ${categories.length} categories`
+        };
+    } catch (error) {
+        console.error('Backup creation failed:', error);
+        return {
+            success: false,
+            error: error.message,
+            message: 'Failed to create backup'
+        };
+    }
 }
 
 /**
@@ -287,11 +333,35 @@ async function createBackup(options = {}) {
  * @returns {Promise<boolean>} - Success status
  */
 async function restoreFromBackup(backup, options = {}) {
-    // TODO: Implement backup restoration
-    // - Validate backup data
-    // - Clear existing data if requested
-    // - Import notes and categories
-    // - Return success status
+    try {
+        // Validate backup data
+        if (!backup || !backup.data || !backup.metadata) {
+            throw new Error('Invalid backup data structure');
+        }
+        
+        if (!backup.data.notes || !Array.isArray(backup.data.notes)) {
+            throw new Error('Backup must contain notes array');
+        }
+        
+        if (!backup.data.categories || !Array.isArray(backup.data.categories)) {
+            throw new Error('Backup must contain categories array');
+        }
+        
+        // Clear existing data if requested
+        if (options.clearExisting) {
+            localStorage.removeItem('notes');
+            localStorage.removeItem('categories');
+        }
+        
+        // Restore notes and categories
+        localStorage.setItem('notes', JSON.stringify(backup.data.notes));
+        localStorage.setItem('categories', JSON.stringify(backup.data.categories));
+        
+        return true;
+    } catch (error) {
+        console.error('Backup restoration failed:', error);
+        return false;
+    }
 }
 
 /**
@@ -299,10 +369,13 @@ async function restoreFromBackup(backup, options = {}) {
  * @returns {Array} - Backup history
  */
 function getBackupHistory() {
-    // TODO: Implement backup history
-    // - Retrieve backup metadata from storage
-    // - Sort by creation date
-    // - Return backup history array
+    try {
+        const backupHistory = JSON.parse(localStorage.getItem('backupHistory') || '[]');
+        return Array.isArray(backupHistory) ? backupHistory : [];
+    } catch (error) {
+        console.error('Failed to parse backup history:', error);
+        return [];
+    }
 }
 
 /**
@@ -311,11 +384,23 @@ function getBackupHistory() {
  * @returns {boolean} - Success status
  */
 function cleanOldBackups(maxBackups = 10) {
-    // TODO: Implement backup cleanup
-    // - Get backup history
-    // - Remove old backups beyond maxBackups
-    // - Update backup history
-    // - Return success status
+    try {
+        const backupHistory = getBackupHistory();
+        const originalCount = backupHistory.length;
+        
+        // Keep only the most recent backups
+        const cleanedHistory = backupHistory.slice(0, maxBackups);
+        
+        localStorage.setItem('backupHistory', JSON.stringify(cleanedHistory));
+        
+        const removedCount = originalCount - cleanedHistory.length;
+        console.log(`Cleaned ${removedCount} old backups, kept ${cleanedHistory.length}`);
+        
+        return true;
+    } catch (error) {
+        console.error('Failed to clean old backups:', error);
+        return false;
+    }
 }
 
 /**
@@ -324,10 +409,19 @@ function cleanOldBackups(maxBackups = 10) {
  * @returns {Promise<Blob>} - Backup file blob
  */
 async function exportBackup(backup) {
-    // TODO: Implement backup export
-    // - Convert backup to JSON
-    // - Create downloadable blob
-    // - Return backup file blob
+    try {
+        if (!backup) {
+            throw new Error('Backup data is required');
+        }
+        
+        const backupJson = JSON.stringify(backup, null, 2);
+        const blob = new Blob([backupJson], { type: 'application/json' });
+        
+        return blob;
+    } catch (error) {
+        console.error('Failed to export backup:', error);
+        throw error;
+    }
 }
 
 /**
@@ -336,11 +430,59 @@ async function exportBackup(backup) {
  * @returns {Object} - Statistics object
  */
 function generateNoteStatistics(notes = null) {
-    // TODO: Implement note statistics
-    // - Get all notes if none provided
-    // - Calculate total notes, categories, word count
-    // - Analyze creation and modification patterns
-    // - Return statistics object
+    const notesToAnalyze = notes || getAllNotes();
+    const categories = getAllCategories();
+    
+    // Basic counts
+    const totalNotes = notesToAnalyze.length;
+    const totalCategories = categories.length;
+    
+    // Word count statistics
+    const wordCountStats = getWordCount(notesToAnalyze);
+    
+    // Date analysis
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const notesThisWeek = notesToAnalyze.filter(note => 
+        new Date(note.timestamp) >= oneWeekAgo
+    ).length;
+    
+    const notesThisMonth = notesToAnalyze.filter(note => 
+        new Date(note.timestamp) >= oneMonthAgo
+    ).length;
+    
+    // Category usage
+    const categoryUsage = {};
+    notesToAnalyze.forEach(note => {
+        const category = note.category || 'uncategorized';
+        categoryUsage[category] = (categoryUsage[category] || 0) + 1;
+    });
+    
+    // Most active categories
+    const sortedCategories = Object.entries(categoryUsage)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+    
+    return {
+        overview: {
+            totalNotes,
+            totalCategories,
+            notesThisWeek,
+            notesThisMonth,
+            averageWordsPerNote: wordCountStats.averageWordsPerNote
+        },
+        wordCount: wordCountStats,
+        categoryUsage,
+        topCategories: sortedCategories,
+        recentActivity: {
+            lastCreated: notesToAnalyze.length > 0 ? 
+                Math.max(...notesToAnalyze.map(n => new Date(n.timestamp))) : null,
+            lastModified: notesToAnalyze.length > 0 ? 
+                Math.max(...notesToAnalyze.map(n => new Date(n.lastModified))) : null
+        }
+    };
 }
 
 /**
@@ -349,11 +491,43 @@ function generateNoteStatistics(notes = null) {
  * @returns {Object} - Word count statistics
  */
 function getWordCount(notes = null) {
-    // TODO: Implement word counting
-    // - Get all notes if none provided
-    // - Count words in titles and content
-    // - Calculate averages and totals
-    // - Return word count statistics
+    const notesToCount = notes || getAllNotes();
+    
+    let totalWords = 0;
+    let totalTitleWords = 0;
+    let totalContentWords = 0;
+    const wordCounts = [];
+    
+    notesToCount.forEach(note => {
+        const titleWords = (note.title || '').split(/\s+/).filter(word => word.length > 0).length;
+        const contentWords = (note.content || '').split(/\s+/).filter(word => word.length > 0).length;
+        const noteTotalWords = titleWords + contentWords;
+        
+        totalTitleWords += titleWords;
+        totalContentWords += contentWords;
+        totalWords += noteTotalWords;
+        wordCounts.push(noteTotalWords);
+    });
+    
+    const averageWordsPerNote = notesToCount.length > 0 ? Math.round(totalWords / notesToCount.length) : 0;
+    const averageTitleWords = notesToCount.length > 0 ? Math.round(totalTitleWords / notesToCount.length) : 0;
+    const averageContentWords = notesToCount.length > 0 ? Math.round(totalContentWords / notesToCount.length) : 0;
+    
+    // Find min and max word counts
+    const minWords = wordCounts.length > 0 ? Math.min(...wordCounts) : 0;
+    const maxWords = wordCounts.length > 0 ? Math.max(...wordCounts) : 0;
+    
+    return {
+        totalWords,
+        totalTitleWords,
+        totalContentWords,
+        averageWordsPerNote,
+        averageTitleWords,
+        averageContentWords,
+        minWords,
+        maxWords,
+        noteCount: notesToCount.length
+    };
 }
 
 /**
@@ -362,11 +536,53 @@ function getWordCount(notes = null) {
  * @returns {Array} - Trend data
  */
 function getNoteTrends(period = 'month') {
-    // TODO: Implement trend analysis
-    // - Group notes by time period
-    // - Calculate creation and modification rates
-    // - Identify patterns and trends
-    // - Return trend data array
+    const notes = getAllNotes();
+    const now = new Date();
+    const trends = [];
+    
+    let periods = 12; // Default to 12 periods
+    let periodMs = 30 * 24 * 60 * 60 * 1000; // Default to 30 days
+    
+    switch (period) {
+        case 'week':
+            periods = 7;
+            periodMs = 24 * 60 * 60 * 1000; // 1 day
+            break;
+        case 'month':
+            periods = 12;
+            periodMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+            break;
+        case 'year':
+            periods = 12;
+            periodMs = 30 * 24 * 60 * 60 * 1000; // 30 days (12 periods = 1 year)
+            break;
+    }
+    
+    for (let i = periods - 1; i >= 0; i--) {
+        const periodStart = new Date(now.getTime() - (i + 1) * periodMs);
+        const periodEnd = new Date(now.getTime() - i * periodMs);
+        
+        const notesInPeriod = notes.filter(note => {
+            const noteDate = new Date(note.timestamp);
+            return noteDate >= periodStart && noteDate < periodEnd;
+        });
+        
+        const modificationsInPeriod = notes.filter(note => {
+            const noteDate = new Date(note.lastModified);
+            return noteDate >= periodStart && noteDate < periodEnd;
+        });
+        
+        trends.push({
+            period: periodStart.toISOString().split('T')[0],
+            startDate: periodStart,
+            endDate: periodEnd,
+            notesCreated: notesInPeriod.length,
+            notesModified: modificationsInPeriod.length,
+            totalNotes: notes.length
+        });
+    }
+    
+    return trends;
 }
 
 /**
@@ -374,11 +590,54 @@ function getNoteTrends(period = 'month') {
  * @returns {Object} - Category statistics
  */
 function getCategoryStatistics() {
-    // TODO: Implement category statistics
-    // - Count notes per category
-    // - Calculate category usage percentages
-    // - Identify most/least used categories
-    // - Return category statistics object
+    const notes = getAllNotes();
+    const categories = getAllCategories();
+    
+    // Count notes per category
+    const categoryCounts = {};
+    let uncategorizedCount = 0;
+    
+    notes.forEach(note => {
+        if (note.category && note.category.trim()) {
+            categoryCounts[note.category] = (categoryCounts[note.category] || 0) + 1;
+        } else {
+            uncategorizedCount++;
+        }
+    });
+    
+    // Calculate percentages
+    const totalNotes = notes.length;
+    const categoryPercentages = {};
+    
+    Object.keys(categoryCounts).forEach(category => {
+        categoryPercentages[category] = Math.round((categoryCounts[category] / totalNotes) * 100);
+    });
+    
+    // Sort categories by usage
+    const sortedCategories = Object.entries(categoryCounts)
+        .sort(([,a], [,b]) => b - a)
+        .map(([name, count]) => ({
+            name,
+            count,
+            percentage: categoryPercentages[name]
+        }));
+    
+    // Find most and least used categories
+    const mostUsed = sortedCategories.length > 0 ? sortedCategories[0] : null;
+    const leastUsed = sortedCategories.length > 0 ? sortedCategories[sortedCategories.length - 1] : null;
+    
+    return {
+        totalCategories: categories.length,
+        totalNotes,
+        uncategorizedCount,
+        uncategorizedPercentage: totalNotes > 0 ? Math.round((uncategorizedCount / totalNotes) * 100) : 0,
+        categoryCounts,
+        categoryPercentages,
+        sortedCategories,
+        mostUsed,
+        leastUsed,
+        averageNotesPerCategory: categories.length > 0 ? Math.round(totalNotes / categories.length) : 0
+    };
 }
 
 /**
@@ -388,11 +647,77 @@ function getCategoryStatistics() {
  * @returns {Object} - Activity report
  */
 function generateActivityReport(startDate, endDate) {
-    // TODO: Implement activity reporting
-    // - Filter notes by date range
-    // - Calculate activity metrics
-    // - Generate summary statistics
-    // - Return activity report object
+    const notes = getAllNotes();
+    
+    // Filter notes by date range
+    const notesInRange = notes.filter(note => {
+        const noteDate = new Date(note.timestamp);
+        return noteDate >= startDate && noteDate <= endDate;
+    });
+    
+    const modificationsInRange = notes.filter(note => {
+        const noteDate = new Date(note.lastModified);
+        return noteDate >= startDate && noteDate <= endDate;
+    });
+    
+    // Calculate activity metrics
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const notesPerDay = totalDays > 0 ? Math.round(notesInRange.length / totalDays * 10) / 10 : 0;
+    const modificationsPerDay = totalDays > 0 ? Math.round(modificationsInRange.length / totalDays * 10) / 10 : 0;
+    
+    // Word count for the period
+    const wordCountStats = getWordCount(notesInRange);
+    
+    // Category breakdown for the period
+    const categoryBreakdown = {};
+    notesInRange.forEach(note => {
+        const category = note.category || 'uncategorized';
+        categoryBreakdown[category] = (categoryBreakdown[category] || 0) + 1;
+    });
+    
+    // Most active day
+    const dailyActivity = {};
+    notesInRange.forEach(note => {
+        const date = note.timestamp.split('T')[0];
+        dailyActivity[date] = (dailyActivity[date] || 0) + 1;
+    });
+    
+    const mostActiveDay = Object.entries(dailyActivity)
+        .sort(([,a], [,b]) => b - a)[0] || null;
+    
+    return {
+        period: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            totalDays
+        },
+        activity: {
+            notesCreated: notesInRange.length,
+            notesModified: modificationsInRange.length,
+            notesPerDay,
+            modificationsPerDay,
+            mostActiveDay: mostActiveDay ? {
+                date: mostActiveDay[0],
+                notesCreated: mostActiveDay[1]
+            } : null
+        },
+        content: {
+            totalWords: wordCountStats.totalWords,
+            averageWordsPerNote: wordCountStats.averageWordsPerNote,
+            totalTitleWords: wordCountStats.totalTitleWords,
+            totalContentWords: wordCountStats.totalContentWords
+        },
+        categories: {
+            breakdown: categoryBreakdown,
+            topCategory: Object.entries(categoryBreakdown)
+                .sort(([,a], [,b]) => b - a)[0] || null
+        },
+        summary: {
+            totalNotes: notes.length,
+            notesInPeriod: notesInRange.length,
+            percentageOfTotal: notes.length > 0 ? Math.round((notesInRange.length / notes.length) * 100) : 0
+        }
+    };
 }
 
 /**
@@ -403,11 +728,21 @@ function generateActivityReport(startDate, endDate) {
  * @returns {void}
  */
 function downloadFile(content, filename, mimeType = 'application/octet-stream') {
-    // TODO: Implement file download
-    // - Create blob from content
-    // - Create download link
-    // - Trigger download with proper filename
-    // - Clean up temporary elements
+    let blob;
+    if (typeof content === 'string') {
+        blob = new Blob([content], { type: mimeType });
+    } else {
+        blob = content;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 export {

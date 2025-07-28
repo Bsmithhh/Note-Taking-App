@@ -1,0 +1,122 @@
+.search-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-left: 2.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 1rem;
+}
+
+.search-history-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.search-history-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.search-history-item:hover {
+  background-color: #f8f9fa;
+}
+
+.search-history-item:last-child {
+  border-bottom: none;
+}
+
+.search-history-icon {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.search-history-text {
+  flex: 1;
+  color: #333;
+  font-size: 14px;
+}
+
+.search-history-date {
+  color: #999;
+  font-size: 0.75rem;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.search-loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #007bff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-results-count {
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+} 

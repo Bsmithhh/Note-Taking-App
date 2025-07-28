@@ -16,6 +16,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
     "babel-jest": "^30.0.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^6.11.0",
@@ -28,6 +29,20 @@
     "webpack-dev-server": "^4.15.2"
   },
   "dependencies": {
-    "jspdf": "^3.0.1"
+    "@tiptap/extension-color": "^3.0.7",
+    "@tiptap/extension-highlight": "^3.0.7",
+    "@tiptap/extension-image": "^3.0.7",
+    "@tiptap/extension-link": "^3.0.7",
+    "@tiptap/extension-text-align": "^3.0.7",
+    "@tiptap/extension-text-style": "^3.0.7",
+    "@tiptap/pm": "^3.0.7",
+    "@tiptap/react": "^3.0.7",
+    "@tiptap/starter-kit": "^3.0.7",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "jspdf": "^3.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.1"
   }
 }

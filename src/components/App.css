@@ -1,0 +1,91 @@
+/* App-specific styles */
+.app {
+  display: flex;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.notes-panel {
+  width: 300px;
+  border-right: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+}
+
+.notes-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.export-btn,
+.import-btn,
+.backup-btn,
+.stats-btn,
+.new-note-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover,
+.import-btn:hover,
+.backup-btn:hover,
+.stats-btn:hover,
+.new-note-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+}
+
+.export-btn { color: #28a745; }
+.export-btn:hover { background: #d4edda; border-color: #28a745; }
+
+.import-btn { color: #17a2b8; }
+.import-btn:hover { background: #d1ecf1; border-color: #17a2b8; }
+
+.backup-btn { color: #2196F3; }
+.backup-btn:hover { background: #E3F2FD; border-color: #2196F3; }
+
+.stats-btn { color: #FF9800; }
+.stats-btn:hover { background: #FFF3E0; border-color: #FF9800; }
+
+.new-note-btn { color: #007bff; }
+.new-note-btn:hover { background: #e3f2fd; border-color: #007bff; }
+
+.content-area {
+  flex: 1;
+  background-color: #ffffff;
+  overflow-y: auto;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #666;
+}
+
+.empty-state h2 {
+  margin-bottom: 1rem;
+  color: #333;
+} 

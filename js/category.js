@@ -74,9 +74,11 @@ import { generateId, getNoteById, getAllNotes, assignCategory, getNotesByCategor
  * @returns {Object|null} - Category object or null if not found
  */
  function getCategoryByName(name) {
+    if (!name) return null;
+    
     const categories = getAllCategories()
     return categories.find(function(category){
-        return category.name === name;
+        return category && category.name === name;
     }) || null;
  }
 
@@ -327,7 +329,7 @@ function bulkRemoveCategory(noteIds) {
     // Check if name already exists (case-insensitive)
     const categories = getAllCategories();
     const existingCategory = categories.find(category => 
-        category.name.toLowerCase() === trimmedName.toLowerCase()
+        category && category.name && category.name.toLowerCase() === trimmedName.toLowerCase()
     );
     
     if (existingCategory) {
@@ -366,7 +368,7 @@ function bulkRemoveCategory(noteIds) {
     const categories = getAllCategories();
     
     return categories.some(category => 
-        category.name.toLowerCase() === trimmedName
+        category && category.name && category.name.toLowerCase() === trimmedName
     );
 }
 

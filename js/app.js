@@ -52,7 +52,18 @@ import {
     importFromJson,
     importFromMarkdown,
     validateImportData,
-    mergeImportedNotes
+    mergeImportedNotes,
+    createBackup,
+    restoreFromBackup,
+    getBackupHistory,
+    cleanOldBackups,
+    exportBackup,
+    generateNoteStatistics,
+    getWordCount,
+    getNoteTrends,
+    getCategoryStatistics,
+    generateActivityReport,
+    downloadFile
 } from './export.js';
 
 class BearNotesApp {
@@ -70,6 +81,7 @@ class BearNotesApp {
     }
 
     initializeApp() {
+        this.cleanupInvalidCategories();
         this.renderSidebar();
         this.renderNotesList();
         this.renderMainContent();
@@ -270,13 +282,19 @@ class BearNotesApp {
             dynamicCategoriesContainer.innerHTML = '';
             
             categories.forEach(category => {
+                // Skip categories with undefined or null names
+                if (!category || !category.name) {
+                    console.warn('Skipping category with undefined name:', category);
+                    return;
+                }
+                
                 const categoryNotes = getNotesByCategory(category.name);
                 const categoryItem = document.createElement('div');
                 categoryItem.className = 'category-item';
                 categoryItem.dataset.category = category.name;
                 categoryItem.dataset.categoryId = category.id;
                 categoryItem.innerHTML = `
-                    <span class="tag-indicator" style="background-color: ${category.color};"></span>
+                    <span class="tag-indicator" style="background-color: ${category.color || '#f0f0f0'};"></span>
                     <span>${category.name}</span>
                     <span class="count">${categoryNotes.length}</span>
                     <button class="delete-category-btn" title="Delete category">🗑️</button>
@@ -1136,6 +1154,24 @@ class BearNotesApp {
         // - Reset toolbar state
     }
 
+    // ===== UTILITY METHODS =====
+
+    /**
+     * Clean up invalid categories (those with undefined names)
+     * @returns {void}
+     */
+    cleanupInvalidCategories() {
+        const categories = getAllCategories();
+        const validCategories = categories.filter(category => 
+            category && category.name && typeof category.name === 'string' && category.name.trim().length > 0
+        );
+        
+        if (validCategories.length !== categories.length) {
+            console.log(`Cleaned up ${categories.length - validCategories.length} invalid categories`);
+            localStorage.setItem('categories', JSON.stringify(validCategories));
+        }
+    }
+
     // ===== EXPORT/IMPORT METHODS =====
 
     /**
@@ -1156,6 +1192,22 @@ class BearNotesApp {
         if (importBtn) {
             importBtn.addEventListener('click', () => {
                 this.showImportDialog();
+            });
+        }
+
+        // Backup button
+        const backupBtn = document.getElementById('backup-btn');
+        if (backupBtn) {
+            backupBtn.addEventListener('click', () => {
+                this.showBackupDialog();
+            });
+        }
+
+        // Statistics button
+        const statsBtn = document.getElementById('stats-btn');
+        if (statsBtn) {
+            statsBtn.addEventListener('click', () => {
+                this.showStatsDialog();
             });
         }
 
@@ -1199,6 +1251,45 @@ class BearNotesApp {
             button.addEventListener('click', () => {
                 this.hideExportDialog();
                 this.hideImportDialog();
+                this.hideBackupDialog();
+                this.hideStatsDialog();
+            });
+        });
+
+        // Backup modal events
+        const createBackupBtn = document.getElementById('create-backup-btn');
+        if (createBackupBtn) {
+            createBackupBtn.addEventListener('click', () => {
+                this.handleCreateBackup();
+            });
+        }
+
+        const exportBackupBtn = document.getElementById('export-backup-btn');
+        if (exportBackupBtn) {
+            exportBackupBtn.addEventListener('click', () => {
+                this.handleExportBackup();
+            });
+        }
+
+        const cleanBackupsBtn = document.getElementById('clean-backups-btn');
+        if (cleanBackupsBtn) {
+            cleanBackupsBtn.addEventListener('click', () => {
+                this.handleCleanBackups();
+            });
+        }
+
+        const restoreBackupBtn = document.getElementById('restore-backup-btn');
+        if (restoreBackupBtn) {
+            restoreBackupBtn.addEventListener('click', () => {
+                this.handleRestoreBackup();
+            });
+        }
+
+        // Statistics modal events
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.switchStatsTab(button.dataset.tab);
             });
         });
     }
@@ -1390,6 +1481,304 @@ class BearNotesApp {
             default:
                 return 'application/octet-stream';
         }
+    }
+
+    // Backup Methods
+    showBackupDialog() {
+        const backupModal = document.getElementById('backup-modal');
+        if (backupModal) {
+            backupModal.style.display = 'flex';
+            this.populateBackupHistory();
+        }
+    }
+
+    hideBackupDialog() {
+        const backupModal = document.getElementById('backup-modal');
+        if (backupModal) {
+            backupModal.style.display = 'none';
+        }
+    }
+
+    async handleCreateBackup() {
+        try {
+            const result = await createBackup();
+            if (result.success) {
+                alert('Backup created successfully!');
+                this.populateBackupHistory();
+            } else {
+                alert('Failed to create backup: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error creating backup: ' + error.message);
+        }
+    }
+
+    async handleExportBackup() {
+        try {
+            const backupHistory = getBackupHistory();
+            if (backupHistory.length === 0) {
+                alert('No backups available to export');
+                return;
+            }
+
+            const latestBackup = backupHistory[0];
+            const blob = await exportBackup(latestBackup);
+            const filename = `backup-${new Date().toISOString().split('T')[0]}.json`;
+            downloadFile(blob, filename, 'application/json');
+        } catch (error) {
+            alert('Error exporting backup: ' + error.message);
+        }
+    }
+
+    handleCleanBackups() {
+        try {
+            const result = cleanOldBackups(5);
+            if (result) {
+                alert('Old backups cleaned successfully');
+                this.populateBackupHistory();
+            } else {
+                alert('Failed to clean old backups');
+            }
+        } catch (error) {
+            alert('Error cleaning backups: ' + error.message);
+        }
+    }
+
+    async handleRestoreBackup() {
+        const fileInput = document.getElementById('restore-backup-file');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a backup file');
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    const success = await restoreFromBackup(backup, { clearExisting: true });
+                    if (success) {
+                        alert('Backup restored successfully!');
+                        this.renderNotesList();
+                        this.renderSidebar();
+                        this.hideBackupDialog();
+                    } else {
+                        alert('Failed to restore backup');
+                    }
+                } catch (error) {
+                    alert('Invalid backup file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        } catch (error) {
+            alert('Error reading backup file: ' + error.message);
+        }
+    }
+
+    populateBackupHistory() {
+        const historyList = document.getElementById('backup-history-list');
+        if (!historyList) return;
+
+        const backupHistory = getBackupHistory();
+        
+        if (backupHistory.length === 0) {
+            historyList.innerHTML = '<div class="backup-history-item">No backups available</div>';
+            return;
+        }
+
+        historyList.innerHTML = backupHistory.map(backup => {
+            const date = new Date(backup.metadata.timestamp).toLocaleString();
+            return `
+                <div class="backup-history-item" onclick="this.restoreBackup('${backup.metadata.timestamp}')">
+                    <div class="backup-date">${date}</div>
+                    <div class="backup-info">${backup.metadata.noteCount} notes, ${backup.metadata.categoryCount} categories</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Statistics Methods
+    showStatsDialog() {
+        const statsModal = document.getElementById('stats-modal');
+        if (statsModal) {
+            statsModal.style.display = 'flex';
+            this.loadStatistics();
+        }
+    }
+
+    hideStatsDialog() {
+        const statsModal = document.getElementById('stats-modal');
+        if (statsModal) {
+            statsModal.style.display = 'none';
+        }
+    }
+
+    loadStatistics() {
+        this.loadOverviewStats();
+        this.loadTrendsStats();
+        this.loadCategoryStats();
+        this.loadActivityStats();
+    }
+
+    loadOverviewStats() {
+        const overviewTab = document.getElementById('overview-tab');
+        if (!overviewTab) return;
+
+        const stats = generateNoteStatistics();
+        
+        overviewTab.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${stats.overview.totalNotes}</div>
+                    <div class="stat-label">Total Notes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.overview.totalCategories}</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.overview.notesThisWeek}</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.overview.notesThisMonth}</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.wordCount.totalWords}</div>
+                    <div class="stat-label">Total Words</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.overview.averageWordsPerNote}</div>
+                    <div class="stat-label">Avg Words/Note</div>
+                </div>
+            </div>
+        `;
+    }
+
+    loadTrendsStats() {
+        const trendsTab = document.getElementById('trends-tab');
+        if (!trendsTab) return;
+
+        const weekTrends = getNoteTrends('week');
+        const monthTrends = getNoteTrends('month');
+        
+        trendsTab.innerHTML = `
+            <h4>Weekly Trends</h4>
+            <div class="trend-chart">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Notes Created</th>
+                            <th>Notes Modified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${weekTrends.map(trend => `
+                            <tr>
+                                <td>${trend.period}</td>
+                                <td>${trend.notesCreated}</td>
+                                <td>${trend.notesModified}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    loadCategoryStats() {
+        const categoriesTab = document.getElementById('categories-tab');
+        if (!categoriesTab) return;
+
+        const categoryStats = getCategoryStatistics();
+        
+        categoriesTab.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${categoryStats.totalCategories}</div>
+                    <div class="stat-label">Total Categories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${categoryStats.uncategorizedCount}</div>
+                    <div class="stat-label">Uncategorized</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${categoryStats.averageNotesPerCategory}</div>
+                    <div class="stat-label">Avg Notes/Category</div>
+                </div>
+            </div>
+            <h4>Category Usage</h4>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Notes</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${categoryStats.sortedCategories.map(cat => `
+                        <tr>
+                            <td>${cat.name}</td>
+                            <td>${cat.count}</td>
+                            <td>${cat.percentage}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    loadActivityStats() {
+        const activityTab = document.getElementById('activity-tab');
+        if (!activityTab) return;
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        const endDate = new Date();
+        
+        const activityReport = generateActivityReport(startDate, endDate);
+        
+        activityTab.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${activityReport.activity.notesCreated}</div>
+                    <div class="stat-label">Notes Created</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${activityReport.activity.notesModified}</div>
+                    <div class="stat-label">Notes Modified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${activityReport.activity.notesPerDay}</div>
+                    <div class="stat-label">Notes/Day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${activityReport.content.totalWords}</div>
+                    <div class="stat-label">Words Written</div>
+                </div>
+            </div>
+            <h4>Activity Summary</h4>
+            <p>Period: ${new Date(activityReport.period.startDate).toLocaleDateString()} - ${new Date(activityReport.period.endDate).toLocaleDateString()}</p>
+            <p>Total days: ${activityReport.period.totalDays}</p>
+            ${activityReport.activity.mostActiveDay ? `
+                <p>Most active day: ${activityReport.activity.mostActiveDay.date} (${activityReport.activity.mostActiveDay.notesCreated} notes)</p>
+            ` : ''}
+        `;
+    }
+
+    switchStatsTab(tabName) {
+        // Remove active class from all tabs and content
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // Add active class to selected tab and content
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 }
 

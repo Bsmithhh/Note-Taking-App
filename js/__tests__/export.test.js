@@ -24,7 +24,7 @@ jest.mock('../note.js', () => ({
 }));
 
 jest.mock('../category.js', () => ({
-  getAllCategories: jest.fn(),
+  getAllCategories: jest.fn().mockReturnValue([]),
   createCategory: jest.fn(),
   deleteCategory: jest.fn()
 }));
@@ -677,6 +677,218 @@ describe('Export Module', () => {
       // Markdown should contain the title and content
       expect(markdownResult).toContain(note.title);
       expect(markdownResult).toContain(note.content);
+    });
+  });
+
+  describe('Backup Functions', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+      // Reset mocks
+      getAllNotes.mockReturnValue(mockNotes);
+      require('../category.js').getAllCategories.mockReturnValue([]);
+    });
+
+    test('createBackup creates backup with notes and categories', async () => {
+      const result = await exportModule.createBackup();
+      
+      expect(result.success).toBe(true);
+      expect(result.backup).toBeDefined();
+      expect(result.backup.metadata).toBeDefined();
+      expect(result.backup.data).toBeDefined();
+      expect(result.backup.data.notes).toEqual(mockNotes);
+      expect(result.backup.metadata.noteCount).toBe(mockNotes.length);
+    });
+
+    test('createBackup handles errors gracefully', async () => {
+      // Mock getAllNotes to throw error
+      getAllNotes.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      const result = await exportModule.createBackup();
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    test('getBackupHistory returns empty array when no backups', () => {
+      const history = exportModule.getBackupHistory();
+      expect(history).toEqual([]);
+    });
+
+    test('getBackupHistory returns backup history', async () => {
+      await exportModule.createBackup();
+      const history = exportModule.getBackupHistory();
+      
+      expect(history.length).toBe(1);
+      expect(history[0].metadata).toBeDefined();
+    });
+
+    test('cleanOldBackups removes excess backups', async () => {
+      // Create multiple backups
+      for (let i = 0; i < 15; i++) {
+        await exportModule.createBackup();
+      }
+      
+      const result = exportModule.cleanOldBackups(5);
+      const history = exportModule.getBackupHistory();
+      
+      expect(result).toBe(true);
+      expect(history.length).toBe(5);
+    });
+
+    test('exportBackup creates downloadable blob', async () => {
+      const backup = {
+        metadata: { timestamp: '2023-01-01T00:00:00Z' },
+        data: { notes: [], categories: [] }
+      };
+      
+      const blob = await exportModule.exportBackup(backup);
+      
+      expect(blob).toBeInstanceOf(Blob);
+      expect(blob.type).toBe('application/json');
+    });
+
+    test('restoreFromBackup restores data successfully', async () => {
+      const backup = {
+        metadata: { timestamp: '2023-01-01T00:00:00Z' },
+        data: { notes: mockNotes, categories: [] }
+      };
+      
+      const result = await exportModule.restoreFromBackup(backup);
+      
+      expect(result).toBe(true);
+    });
+
+    test('restoreFromBackup validates backup structure', async () => {
+      const invalidBackup = { notes: [] };
+      
+      const result = await exportModule.restoreFromBackup(invalidBackup);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Statistics Functions', () => {
+    test('generateNoteStatistics provides comprehensive stats', () => {
+      const stats = exportModule.generateNoteStatistics();
+      
+      expect(stats.overview).toBeDefined();
+      expect(stats.wordCount).toBeDefined();
+      expect(stats.categoryUsage).toBeDefined();
+      expect(stats.topCategories).toBeDefined();
+      expect(stats.recentActivity).toBeDefined();
+    });
+
+    test('getWordCount calculates word statistics correctly', () => {
+      const wordStats = exportModule.getWordCount();
+      
+      expect(wordStats.totalWords).toBeGreaterThan(0);
+      expect(wordStats.averageWordsPerNote).toBeGreaterThan(0);
+      expect(wordStats.noteCount).toBe(mockNotes.length);
+      expect(wordStats.minWords).toBeGreaterThanOrEqual(0);
+      expect(wordStats.maxWords).toBeGreaterThan(0);
+    });
+
+    test('getWordCount handles empty notes array', () => {
+      getAllNotes.mockReturnValue([]);
+      const wordStats = exportModule.getWordCount();
+      
+      expect(wordStats.totalWords).toBe(0);
+      expect(wordStats.averageWordsPerNote).toBe(0);
+      expect(wordStats.noteCount).toBe(0);
+    });
+
+    test('getNoteTrends returns trend data for different periods', () => {
+      const weekTrends = exportModule.getNoteTrends('week');
+      const monthTrends = exportModule.getNoteTrends('month');
+      const yearTrends = exportModule.getNoteTrends('year');
+      
+      expect(weekTrends.length).toBe(7);
+      expect(monthTrends.length).toBe(12);
+      expect(yearTrends.length).toBe(12);
+      
+      weekTrends.forEach(trend => {
+        expect(trend.period).toBeDefined();
+        expect(trend.notesCreated).toBeGreaterThanOrEqual(0);
+        expect(trend.notesModified).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    test('getCategoryStatistics provides category analysis', () => {
+      const categoryStats = exportModule.getCategoryStatistics();
+      
+      expect(categoryStats.totalCategories).toBeGreaterThanOrEqual(0);
+      expect(categoryStats.totalNotes).toBe(mockNotes.length);
+      expect(categoryStats.categoryCounts).toBeDefined();
+      expect(categoryStats.categoryPercentages).toBeDefined();
+      expect(categoryStats.sortedCategories).toBeDefined();
+    });
+
+    test('generateActivityReport creates comprehensive report', () => {
+      const startDate = new Date('2023-01-01');
+      const endDate = new Date('2023-12-31');
+      
+      const report = exportModule.generateActivityReport(startDate, endDate);
+      
+      expect(report.period).toBeDefined();
+      expect(report.activity).toBeDefined();
+      expect(report.content).toBeDefined();
+      expect(report.categories).toBeDefined();
+      expect(report.summary).toBeDefined();
+    });
+
+    test('generateActivityReport handles empty date range', () => {
+      const startDate = new Date('2025-01-01');
+      const endDate = new Date('2025-12-31');
+      
+      const report = exportModule.generateActivityReport(startDate, endDate);
+      
+      expect(report.activity.notesCreated).toBe(0);
+      expect(report.activity.notesModified).toBe(0);
+    });
+  });
+
+  describe('Utility Functions', () => {
+    test('downloadFile creates download link', () => {
+      const content = 'test content';
+      const filename = 'test.txt';
+      
+      // Mock document methods
+      const mockLink = {
+        href: '',
+        download: '',
+        click: jest.fn()
+      };
+      
+      const mockAppendChild = jest.fn();
+      const mockRemoveChild = jest.fn();
+      
+      // Mock document if it doesn't exist (for Node.js environment)
+      if (typeof document === 'undefined') {
+        global.document = {
+          createElement: jest.fn().mockReturnValue(mockLink),
+          body: {
+            appendChild: mockAppendChild,
+            removeChild: mockRemoveChild
+          }
+        };
+        global.URL = {
+          createObjectURL: jest.fn().mockReturnValue('blob:mock'),
+          revokeObjectURL: jest.fn()
+        };
+      } else {
+        document.createElement = jest.fn().mockReturnValue(mockLink);
+        document.body.appendChild = mockAppendChild;
+        document.body.removeChild = mockRemoveChild;
+      }
+      
+      exportModule.downloadFile(content, filename);
+      
+      expect(document.createElement).toHaveBeenCalledWith('a');
+      expect(mockAppendChild).toHaveBeenCalledWith(mockLink);
+      expect(mockRemoveChild).toHaveBeenCalledWith(mockLink);
     });
   });
 }); 

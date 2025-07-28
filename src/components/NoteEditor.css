@@ -1,0 +1,347 @@
+.note-content {
+  padding: 2rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.note-title-input {
+  flex: 1;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  color: #333;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.note-title-input:focus {
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.25rem;
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.note-category {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: white;
+}
+
+.note-date {
+  color: #999;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.note-action-btn {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.note-action-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+}
+
+.save-btn {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.save-btn:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.delete-btn {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.delete-btn:hover {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+/* TipTap Editor Toolbar */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  flex-wrap: wrap;
+}
+
+.editor-toolbar button {
+  background: none;
+  border: 1px solid transparent;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.editor-toolbar button:hover {
+  background-color: #e9ecef;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.editor-toolbar button.is-active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #ddd;
+  margin: 0 0.25rem;
+}
+
+.note-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 400px;
+}
+
+.tiptap-editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+/* TipTap Editor Content Styles */
+.tiptap-editor-container .ProseMirror {
+  flex: 1;
+  padding: 1rem;
+  min-height: 300px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #333;
+  outline: none;
+  font-family: inherit;
+}
+
+.tiptap-editor-container .ProseMirror:focus {
+  outline: none;
+}
+
+.tiptap-editor-container .ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* TipTap Content Styling */
+.ProseMirror h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem 0;
+  color: #333;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem 0;
+  color: #333;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0.25rem 0;
+  color: #333;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid #007bff;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #666;
+  font-style: italic;
+}
+
+.ProseMirror a {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: #0056b3;
+}
+
+.ProseMirror mark {
+  background-color: #fef08a;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+.ProseMirror strong {
+  font-weight: 600;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror s {
+  text-decoration: line-through;
+}
+
+.ProseMirror .is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.note-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.word-count {
+  color: #999;
+}
+
+.last-modified {
+  color: #999;
+}
+
+.note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tag {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.add-tag-input {
+  border: 1px dashed #ddd;
+  background: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-tag-input:hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.add-tag-input:focus {
+  outline: none;
+  border-color: #007bff;
+  background-color: #ffffff;
+} 
