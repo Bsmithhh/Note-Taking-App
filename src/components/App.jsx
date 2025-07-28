@@ -45,30 +45,60 @@ function App() {
 
   // Check authentication on app load
   useEffect(() => {
-    if (isAuthenticated()) {
-      const currentUser = getCurrentUser();
-      setUser(currentUser);
-      loadNotes();
-      loadCategories();
-    }
+    let mounted = true;
+    
+    const initializeApp = async () => {
+      try {
+        if (isAuthenticated() && mounted) {
+          const currentUser = getCurrentUser();
+          setUser(currentUser);
+          loadNotes();
+          loadCategories();
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+
+    initializeApp();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const loadNotes = () => {
-    const allNotes = getAllNotes();
-    setNotes(allNotes);
+    try {
+      const allNotes = getAllNotes();
+      setNotes(allNotes);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+      setNotes([]);
+    }
   };
 
   const loadCategories = () => {
-    const allCategories = getAllCategories();
-    setCategories(allCategories);
+    try {
+      const allCategories = getAllCategories();
+      setCategories(allCategories);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setCategories([]);
+    }
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim()) {
-      const results = fullTextSearch(query, notes);
-      setSearchResults(results);
-      setIsSearching(true);
+      try {
+        const results = fullTextSearch(query, notes);
+        setSearchResults(results);
+        setIsSearching(true);
+      } catch (error) {
+        console.error('Error searching notes:', error);
+        setSearchResults([]);
+        setIsSearching(false);
+      }
     } else {
       setSearchResults([]);
       setIsSearching(false);
@@ -76,43 +106,62 @@ function App() {
   };
 
   const handleNoteSelect = (noteId) => {
-    const note = notes.find(n => n.id === noteId);
-    setCurrentNote(note);
-    // Close sidebar on mobile when note is selected
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
+    try {
+      const note = notes.find(n => n.id === noteId);
+      setCurrentNote(note);
+      // Close sidebar on mobile when note is selected
+      if (window.innerWidth <= 768) {
+        setSidebarOpen(false);
+      }
+    } catch (error) {
+      console.error('Error selecting note:', error);
     }
   };
 
   const handleNoteSave = (noteData) => {
-    if (noteData.id) {
-      editNote(noteData.id, noteData.title, noteData.content, noteData.category);
-    } else {
-      createNote(noteData.title, noteData.content, noteData.category);
+    try {
+      if (noteData.id) {
+        editNote(noteData.id, noteData.title, noteData.content, noteData.category);
+      } else {
+        createNote(noteData.title, noteData.content, noteData.category);
+      }
+      loadNotes();
+      loadCategories();
+    } catch (error) {
+      console.error('Error saving note:', error);
     }
-    loadNotes();
-    loadCategories();
   };
 
   const handleNoteDelete = (noteId) => {
-    deleteNote(noteId);
-    loadNotes();
-    if (currentNote && currentNote.id === noteId) {
-      setCurrentNote(null);
+    try {
+      deleteNote(noteId);
+      loadNotes();
+      if (currentNote && currentNote.id === noteId) {
+        setCurrentNote(null);
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
     }
   };
 
   const handleCategoryCreate = (categoryData) => {
-    createCategory(categoryData.name, categoryData.color);
-    loadCategories();
+    try {
+      createCategory(categoryData.name);
+      loadCategories();
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
   };
 
   const handleCategoryDelete = () => {
-    if (deleteCategoryData) {
-      deleteCategory(deleteCategoryData.id, deleteCategoryData.reassignTo);
-      loadNotes();
-      loadCategories();
-      setDeleteCategoryData(null);
+    try {
+      if (deleteCategoryData) {
+        deleteCategory(deleteCategoryData.id);
+        loadCategories();
+        setDeleteCategoryData(null);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
     }
   };
 
@@ -133,22 +182,31 @@ function App() {
     setUser(userData);
     loadNotes();
     loadCategories();
+    closeModal('login');
   };
 
   const handleRegisterSuccess = (userData) => {
     setUser(userData);
     loadNotes();
     loadCategories();
+    closeModal('register');
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setNotes([]);
-    setCategories([]);
-    setCurrentNote(null);
-    setSearchQuery('');
-    setSearchResults([]);
-    setIsSearching(false);
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('currentUser');
+      setUser(null);
+      setNotes([]);
+      setCategories([]);
+      setCurrentNote(null);
+      setSearchQuery('');
+      setSearchResults([]);
+      setIsSearching(false);
+      closeModal('profile');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
 
   const switchToRegister = () => {
@@ -263,10 +321,14 @@ function App() {
                     key={category.id}
                     className={`category-item ${searchQuery === category.name ? 'active' : ''}`}
                     onClick={() => {
-                      const filteredNotes = notes.filter(note => note.category === category.name);
-                      setSearchResults(filteredNotes);
-                      setIsSearching(true);
-                      setSearchQuery(category.name);
+                      try {
+                        const filteredNotes = notes.filter(note => note.category === category.name);
+                        setSearchResults(filteredNotes);
+                        setIsSearching(true);
+                        setSearchQuery(category.name);
+                      } catch (error) {
+                        console.error('Error filtering notes by category:', error);
+                      }
                     }}
                   >
                     <span>{category.name}</span>
@@ -334,15 +396,21 @@ function App() {
           isOpen={modals.import}
           onClose={() => closeModal('import')}
           onImport={(importedNotes) => {
-            const result = importNotes(importedNotes, { duplicateStrategy: 'rename' });
-            if (result.success) {
-              loadNotes();
-              loadCategories();
-              alert(result.message);
-            } else {
-              alert(`Import failed: ${result.error}`);
+            try {
+              const result = importNotes(importedNotes, { duplicateStrategy: 'rename' });
+              if (result.success) {
+                loadNotes();
+                loadCategories();
+                alert(result.message);
+              } else {
+                alert(`Import failed: ${result.error}`);
+              }
+              closeModal('import');
+            } catch (error) {
+              console.error('Error importing notes:', error);
+              alert('Import failed due to an error');
+              closeModal('import');
             }
-            closeModal('import');
           }}
         />
         
@@ -368,9 +436,13 @@ function App() {
           onClose={() => closeModal('createNote')}
           categories={categories}
           onCreate={(noteData) => {
-            createNote(noteData.title, noteData.content, noteData.category);
-            loadNotes();
-            closeModal('createNote');
+            try {
+              createNote(noteData.title, noteData.content, noteData.category);
+              loadNotes();
+              closeModal('createNote');
+            } catch (error) {
+              console.error('Error creating note:', error);
+            }
           }}
         />
         
