@@ -292,6 +292,38 @@ const validationChains = {
   // Get single category
   getCategory: [
     commonValidations.objectId
+  ],
+  
+  // Get user by ID
+  getUser: [
+    commonValidations.objectId
+  ],
+  
+  // Update user
+  updateUser: [
+    commonValidations.objectId,
+    body('username')
+      .optional()
+      .isLength({ min: 3, max: 30 })
+      .matches(/^[a-zA-Z0-9_]+$/)
+      .withMessage('Username must be 3-30 characters and contain only letters, numbers, and underscores'),
+    body('email')
+      .optional()
+      .isEmail()
+      .normalizeEmail()
+      .withMessage('Please enter a valid email'),
+    body('firstName')
+      .optional()
+      .isLength({ max: 50 })
+      .withMessage('First name cannot exceed 50 characters'),
+    body('lastName')
+      .optional()
+      .isLength({ max: 50 })
+      .withMessage('Last name cannot exceed 50 characters'),
+    body('isActive')
+      .optional()
+      .isBoolean()
+      .withMessage('isActive must be a boolean')
   ]
 };
 

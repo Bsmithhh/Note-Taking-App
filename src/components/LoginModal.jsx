@@ -5,7 +5,7 @@ import './AuthModal.css';
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess, onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -27,7 +27,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onSwitchToRegister }) => 
     setError('');
 
     try {
-      const result = loginUser(formData);
+      const result = await loginUser(formData);
       
       if (result.success) {
         onLoginSuccess(result.user);
@@ -62,14 +62,14 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, onSwitchToRegister }) => 
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="username">Username or Email</label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
               onChange={handleInputChange}
-              placeholder="Enter your email"
+              placeholder="Enter your username or email"
               required
               disabled={isLoading}
             />

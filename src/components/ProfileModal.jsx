@@ -59,7 +59,7 @@ const ProfileModal = ({ isOpen, onClose, onLogout }) => {
     setSuccess('');
 
     try {
-      const result = updateProfile(formData);
+      const result = await updateProfile(formData);
       
       if (result.success) {
         setSuccess('Profile updated successfully!');
@@ -92,7 +92,7 @@ const ProfileModal = ({ isOpen, onClose, onLogout }) => {
     setSuccess('');
 
     try {
-      const result = changePassword({
+      const result = await changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });

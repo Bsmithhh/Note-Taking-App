@@ -147,4 +147,46 @@ userSchema.statics.emailExists = async function(email) {
   return !!user;
 };
 
+// Static method to get users with pagination
+userSchema.statics.getUsersWithPagination = async function(options, search) {
+  const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+  
+  const query = {};
+  if (search) {
+    query.$or = [
+      { username: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+      { firstName: { $regex: search, $options: 'i' } },
+      { lastName: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const sort = {};
+  sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const [users, total] = await Promise.all([
+    this.find(query)
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    this.countDocuments(query)
+  ]);
+
+  return {
+    users,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit)),
+      hasNext: parseInt(page) * parseInt(limit) < total,
+      hasPrev: parseInt(page) > 1
+    }
+  };
+};
+
 module.exports = mongoose.model('User', userSchema); 

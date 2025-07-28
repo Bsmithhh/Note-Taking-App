@@ -1,8 +1,7 @@
 // Authentication service - handles user authentication and session management
-// This will eventually connect to the backend API
+// Connected to the Node.js backend API
 
-// For now, we'll use localStorage to simulate user sessions
-// Later, these will be replaced with API calls to the Node.js backend
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 /**
  * Register a new user
@@ -10,50 +9,38 @@
  * @param {string} userData.username - Username
  * @param {string} userData.email - Email address
  * @param {string} userData.password - Password
+ * @param {string} userData.firstName - First name (optional)
+ * @param {string} userData.lastName - Last name (optional)
  * @returns {Object} - Registration result
  */
-export const registerUser = (userData) => {
+export const registerUser = async (userData) => {
   try {
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    // Check if user already exists
-    const existingUser = users.find(user => 
-      user.email === userData.email || user.username === userData.username
-    );
-    
-    if (existingUser) {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.data.token);
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      
+      return {
+        success: true,
+        user: data.data.user,
+        token: data.data.token
+      };
+    } else {
       return {
         success: false,
-        error: existingUser.email === userData.email 
-          ? 'Email already registered' 
-          : 'Username already taken'
+        error: data.message || 'Registration failed'
       };
     }
-    
-    // Create new user
-    const newUser = {
-      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      username: userData.username,
-      email: userData.email,
-      password: userData.password, // In production, this should be hashed
-      createdAt: new Date().toISOString(),
-      lastLogin: null
-    };
-    
-    // Add user to storage
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    return {
-      success: true,
-      user: {
-        id: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        createdAt: newUser.createdAt
-      }
-    };
   } catch (error) {
     return {
       success: false,
@@ -65,58 +52,38 @@ export const registerUser = (userData) => {
 /**
  * Login user
  * @param {Object} credentials - Login credentials
- * @param {string} credentials.email - Email address
+ * @param {string} credentials.username - Username or email
  * @param {string} credentials.password - Password
  * @returns {Object} - Login result
  */
-export const loginUser = (credentials) => {
+export const loginUser = async (credentials) => {
   try {
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    // Find user by email
-    const user = users.find(u => u.email === credentials.email);
-    
-    if (!user) {
-      return {
-        success: false,
-        error: 'User not found'
-      };
-    }
-    
-    // Check password
-    if (user.password !== credentials.password) {
-      return {
-        success: false,
-        error: 'Invalid password'
-      };
-    }
-    
-    // Update last login
-    user.lastLogin = new Date().toISOString();
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    // Create session
-    const session = {
-      userId: user.id,
-      username: user.username,
-      email: user.email,
-      loginTime: new Date().toISOString(),
-      token: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-    
-    localStorage.setItem('currentSession', JSON.stringify(session));
-    
-    return {
-      success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        lastLogin: user.lastLogin
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      session
-    };
+      body: JSON.stringify(credentials),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.data.token);
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      
+      return {
+        success: true,
+        user: data.data.user,
+        token: data.data.token
+      };
+    } else {
+      return {
+        success: false,
+        error: data.message || 'Login failed'
+      };
+    }
   } catch (error) {
     return {
       success: false,
@@ -126,12 +93,13 @@ export const loginUser = (credentials) => {
 };
 
 /**
- * Logout current user
+ * Logout user
  * @returns {Object} - Logout result
  */
 export const logoutUser = () => {
   try {
-    localStorage.removeItem('currentSession');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
     return {
       success: true,
       message: 'Logged out successfully'
@@ -150,8 +118,16 @@ export const logoutUser = () => {
  */
 export const getCurrentSession = () => {
   try {
-    const session = localStorage.getItem('currentSession');
-    return session ? JSON.parse(session) : null;
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('currentUser');
+    
+    if (token && user) {
+      return {
+        token,
+        user: JSON.parse(user)
+      };
+    }
+    return null;
   } catch (error) {
     return null;
   }
@@ -171,24 +147,15 @@ export const isAuthenticated = () => {
  */
 export const getCurrentUser = () => {
   const session = getCurrentSession();
-  if (!session) return null;
-  
-  try {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.id === session.userId);
-    
-    if (!user) return null;
-    
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin
-    };
-  } catch (error) {
-    return null;
-  }
+  return session ? session.user : null;
+};
+
+/**
+ * Get authentication token
+ * @returns {string|null} - JWT token or null if not authenticated
+ */
+export const getAuthToken = () => {
+  return localStorage.getItem('authToken');
 };
 
 /**
@@ -196,53 +163,41 @@ export const getCurrentUser = () => {
  * @param {Object} updates - Profile updates
  * @returns {Object} - Update result
  */
-export const updateProfile = (updates) => {
+export const updateProfile = async (updates) => {
   try {
-    const session = getCurrentSession();
-    if (!session) {
+    const token = getAuthToken();
+    if (!token) {
       return {
         success: false,
         error: 'Not authenticated'
       };
     }
-    
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userIndex = users.findIndex(u => u.id === session.userId);
-    
-    if (userIndex === -1) {
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(updates),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Update stored user data
+      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      
+      return {
+        success: true,
+        user: data.data.user
+      };
+    } else {
       return {
         success: false,
-        error: 'User not found'
+        error: data.message || 'Profile update failed'
       };
     }
-    
-    // Update user data
-    users[userIndex] = {
-      ...users[userIndex],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    // Update session
-    const newSession = {
-      ...session,
-      username: updates.username || session.username,
-      email: updates.email || session.email
-    };
-    localStorage.setItem('currentSession', JSON.stringify(newSession));
-    
-    return {
-      success: true,
-      user: {
-        id: users[userIndex].id,
-        username: users[userIndex].username,
-        email: users[userIndex].email,
-        createdAt: users[userIndex].createdAt,
-        lastLogin: users[userIndex].lastLogin
-      }
-    };
   } catch (error) {
     return {
       success: false,
@@ -258,48 +213,91 @@ export const updateProfile = (updates) => {
  * @param {string} passwordData.newPassword - New password
  * @returns {Object} - Password change result
  */
-export const changePassword = (passwordData) => {
+export const changePassword = async (passwordData) => {
   try {
-    const session = getCurrentSession();
-    if (!session) {
+    const token = getAuthToken();
+    if (!token) {
       return {
         success: false,
         error: 'Not authenticated'
       };
     }
-    
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userIndex = users.findIndex(u => u.id === session.userId);
-    
-    if (userIndex === -1) {
+
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      return {
+        success: true,
+        message: data.message || 'Password changed successfully'
+      };
+    } else {
       return {
         success: false,
-        error: 'User not found'
+        error: data.message || 'Password change failed'
       };
     }
-    
-    // Verify current password
-    if (users[userIndex].password !== passwordData.currentPassword) {
-      return {
-        success: false,
-        error: 'Current password is incorrect'
-      };
-    }
-    
-    // Update password
-    users[userIndex].password = passwordData.newPassword;
-    users[userIndex].updatedAt = new Date().toISOString();
-    
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    return {
-      success: true,
-      message: 'Password changed successfully'
-    };
   } catch (error) {
     return {
       success: false,
       error: 'Password change failed: ' + error.message
+    };
+  }
+};
+
+/**
+ * Refresh authentication token
+ * @returns {Object} - Token refresh result
+ */
+export const refreshToken = async () => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      return {
+        success: false,
+        error: 'No token to refresh'
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Update stored token
+      localStorage.setItem('authToken', data.data.token);
+      
+      return {
+        success: true,
+        token: data.data.token
+      };
+    } else {
+      // Token refresh failed, logout user
+      logoutUser();
+      return {
+        success: false,
+        error: data.message || 'Token refresh failed'
+      };
+    }
+  } catch (error) {
+    // Network error, logout user
+    logoutUser();
+    return {
+      success: false,
+      error: 'Token refresh failed: ' + error.message
     };
   }
 }; 

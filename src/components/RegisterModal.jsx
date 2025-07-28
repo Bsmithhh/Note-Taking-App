@@ -53,7 +53,7 @@ const RegisterModal = ({ isOpen, onClose, onRegisterSuccess, onSwitchToLogin }) 
     setError('');
 
     try {
-      const result = registerUser({
+      const result = await registerUser({
         username: formData.username,
         email: formData.email,
         password: formData.password
