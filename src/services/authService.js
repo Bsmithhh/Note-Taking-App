@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
     // In browser, check for environment variable or use default
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3001/api'
-      : 'https://your-app.railway.app/api'; // Replace with your Railway URL
+      : 'https://note-taking-app-production-7468.up.railway.app/api'; // Production Railway backend
   }
   // In Node.js environment (build time)
   return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
@@ -32,51 +32,84 @@ const isProduction = typeof window !== 'undefined' &&
  * @returns {Object} - Registration result
  */
 export const registerUser = async (userData) => {
-  // If in production and backend is not available, use localStorage fallback
-  if (isProduction) {
+  // Try backend API first (both development and production)
+  if (API_BASE_URL) {
     try {
-      // Check if user already exists
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const existingUser = existingUsers.find(u => 
-        u.username === userData.username || u.email === userData.email
-      );
-      
-      if (existingUser) {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+        
+        return {
+          success: true,
+          user: data.data.user,
+          token: data.data.token
+        };
+      } else {
         return {
           success: false,
-          error: 'User already exists'
+          error: data.message || 'Registration failed'
         };
       }
-
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
-        username: userData.username,
-        email: userData.email,
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        createdAt: new Date().toISOString()
-      };
-
-      // Store user
-      existingUsers.push(newUser);
-      localStorage.setItem('users', JSON.stringify(existingUsers));
-      
-      // Auto-login the user
-      localStorage.setItem('authToken', 'demo-token-' + Date.now());
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-      
-      return {
-        success: true,
-        user: newUser,
-        token: 'demo-token-' + Date.now()
-      };
     } catch (error) {
+      // If backend fails, fall back to localStorage (for offline functionality)
+      console.warn('Backend registration failed, using localStorage fallback:', error.message);
+    }
+  }
+
+  // Fallback to localStorage if backend is not available
+  try {
+    // Check if user already exists
+    const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    const existingUser = existingUsers.find(u => 
+      u.username === userData.username || u.email === userData.email
+    );
+    
+    if (existingUser) {
       return {
         success: false,
-        error: 'Registration failed: ' + error.message
+        error: 'User already exists'
       };
     }
+
+    // Create new user
+    const newUser = {
+      id: Date.now().toString(),
+      username: userData.username,
+      email: userData.email,
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      createdAt: new Date().toISOString()
+    };
+
+    // Store user
+    existingUsers.push(newUser);
+    localStorage.setItem('users', JSON.stringify(existingUsers));
+    
+    // Auto-login the user
+    localStorage.setItem('authToken', 'demo-token-' + Date.now());
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    
+    return {
+      success: true,
+      user: newUser,
+      token: 'demo-token-' + Date.now()
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Registration failed: ' + error.message
+    };
   }
 
   // Try backend API if available
@@ -109,18 +142,55 @@ export const registerUser = async (userData) => {
         };
       }
     } catch (error) {
-      return {
-        success: false,
-        error: 'Registration failed: ' + error.message
-      };
+      // If backend fails, fall back to localStorage (for offline functionality)
+      console.warn('Backend registration failed, using localStorage fallback:', error.message);
     }
   }
-  
-  // If no API available, return error
-  return {
-    success: false,
-    error: 'Backend not available'
-  };
+
+  // Fallback to localStorage if backend is not available
+  try {
+    // Check if user already exists
+    const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    const existingUser = existingUsers.find(u => 
+      u.username === userData.username || u.email === userData.email
+    );
+    
+    if (existingUser) {
+      return {
+        success: false,
+        error: 'User already exists'
+      };
+    }
+
+    // Create new user
+    const newUser = {
+      id: Date.now().toString(),
+      username: userData.username,
+      email: userData.email,
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      createdAt: new Date().toISOString()
+    };
+
+    // Store user
+    existingUsers.push(newUser);
+    localStorage.setItem('users', JSON.stringify(existingUsers));
+    
+    // Auto-login the user
+    localStorage.setItem('authToken', 'demo-token-' + Date.now());
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    
+    return {
+      success: true,
+      user: newUser,
+      token: 'demo-token-' + Date.now()
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Registration failed: ' + error.message
+    };
+  }
 };
 
 /**
@@ -131,36 +201,69 @@ export const registerUser = async (userData) => {
  * @returns {Object} - Login result
  */
 export const loginUser = async (credentials) => {
-  // If in production and backend is not available, use localStorage fallback
-  if (isProduction) {
+  // Try backend API first (both development and production)
+  if (API_BASE_URL) {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find(u => 
-        u.username === credentials.username || u.email === credentials.username
-      );
-      
-      if (!user) {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store token in localStorage
+        localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+        
+        return {
+          success: true,
+          user: data.data.user,
+          token: data.data.token
+        };
+      } else {
         return {
           success: false,
-          error: 'User not found'
+          error: data.message || 'Login failed'
         };
       }
-
-      // In demo mode, accept any password
-      localStorage.setItem('authToken', 'demo-token-' + Date.now());
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      
-      return {
-        success: true,
-        user: user,
-        token: 'demo-token-' + Date.now()
-      };
     } catch (error) {
+      // If backend fails, fall back to localStorage (for offline functionality)
+      console.warn('Backend login failed, using localStorage fallback:', error.message);
+    }
+  }
+
+  // Fallback to localStorage if backend is not available
+  try {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => 
+      u.username === credentials.username || u.email === credentials.username
+    );
+    
+    if (!user) {
       return {
         success: false,
-        error: 'Login failed: ' + error.message
+        error: 'User not found'
       };
     }
+
+    // In demo mode, accept any password
+    localStorage.setItem('authToken', 'demo-token-' + Date.now());
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    
+    return {
+      success: true,
+      user: user,
+      token: 'demo-token-' + Date.now()
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Login failed: ' + error.message
+    };
   }
 
   // Try backend API if available
