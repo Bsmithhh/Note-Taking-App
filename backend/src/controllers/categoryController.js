@@ -6,7 +6,14 @@ const Note = require('../models/Note');
 // @access  Private
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.getUserCategories(req.user._id);
+    // Simple query without complex stats for now
+    const categories = await Category.find({ 
+      userId: req.user._id, 
+      isActive: true 
+    })
+    .populate('parentCategory', 'name color')
+    .sort({ order: 1, name: 1 })
+    .lean();
 
     res.json({
       success: true,
