@@ -11,9 +11,13 @@ import StatisticsModal from './StatisticsModal';
 import CreateNoteModal from './CreateNoteModal';
 import CreateCategoryModal from './CreateCategoryModal';
 import DeleteCategoryModal from './DeleteCategoryModal';
+import LoginModal from './LoginModal';
+import RegisterModal from './RegisterModal';
+import ProfileModal from './ProfileModal';
 import { getAllNotes, createNote, editNote, deleteNote, importNotes } from '../services/noteService';
 import { getAllCategories, createCategory, deleteCategory } from '../services/categoryService';
 import { fullTextSearch } from '../services/searchService';
+import { isAuthenticated, getCurrentUser } from '../services/authService';
 import './App.css';
 
 function App() {
@@ -23,6 +27,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [user, setUser] = useState(null);
   const [modals, setModals] = useState({
     export: false,
     import: false,
@@ -30,14 +35,21 @@ function App() {
     statistics: false,
     createNote: false,
     createCategory: false,
-    deleteCategory: false
+    deleteCategory: false,
+    login: false,
+    register: false,
+    profile: false
   });
   const [deleteCategoryData, setDeleteCategoryData] = useState(null);
 
-  // Load initial data
+  // Check authentication on app load
   useEffect(() => {
-    loadNotes();
-    loadCategories();
+    if (isAuthenticated()) {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+      loadNotes();
+      loadCategories();
+    }
   }, []);
 
   const loadNotes = () => {
@@ -114,60 +126,159 @@ function App() {
     openModal('deleteCategory');
   };
 
+  // Authentication handlers
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    loadNotes();
+    loadCategories();
+  };
+
+  const handleRegisterSuccess = (userData) => {
+    setUser(userData);
+    loadNotes();
+    loadCategories();
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setNotes([]);
+    setCategories([]);
+    setCurrentNote(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+  };
+
+  const switchToRegister = () => {
+    closeModal('login');
+    openModal('register');
+  };
+
+  const switchToLogin = () => {
+    closeModal('register');
+    openModal('login');
+  };
+
+  // If user is not authenticated, show login screen
+  if (!user) {
+    return (
+      <div className="auth-container">
+        <div className="auth-welcome">
+          <h1>Welcome to Bear Notes</h1>
+          <p>Your personal note-taking companion</p>
+          <div className="auth-buttons">
+            <button 
+              className="auth-button primary"
+              onClick={() => openModal('login')}
+            >
+              Sign In
+            </button>
+            <button 
+              className="auth-button secondary"
+              onClick={() => openModal('register')}
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+
+        <LoginModal 
+          isOpen={modals.login}
+          onClose={() => closeModal('login')}
+          onLoginSuccess={handleLoginSuccess}
+          onSwitchToRegister={switchToRegister}
+        />
+
+        <RegisterModal 
+          isOpen={modals.register}
+          onClose={() => closeModal('register')}
+          onRegisterSuccess={handleRegisterSuccess}
+          onSwitchToLogin={switchToLogin}
+        />
+      </div>
+    );
+  }
+
+  // Display notes based on search or all notes
   const displayNotes = isSearching ? searchResults : notes;
 
   return (
     <Router>
       <div className="app">
-        <Sidebar 
-          categories={categories}
-          onCategorySelect={(category) => handleSearch('')}
-          onCategoryDelete={showDeleteCategoryModal}
-          onCreateCategory={() => openModal('createCategory')}
-        />
-        
-        <div className="main-content">
-          <div className="notes-panel">
-            <div className="notes-header">
-              <SearchBar 
-                onSearch={handleSearch}
-                searchQuery={searchQuery}
-                isSearching={isSearching}
-              />
-              <div className="notes-actions">
+        <div className="app-header">
+          <div className="header-left">
+            <h1>Bear Notes</h1>
+            <span className="user-welcome">Welcome, {user.username}!</span>
+          </div>
+          <div className="header-right">
+            <button 
+              className="header-button"
+              onClick={() => openModal('profile')}
+            >
+              Profile
+            </button>
+          </div>
+        </div>
+
+        <div className="app-content">
+          <div className="sidebar-area">
+            <div className="sidebar-header">
+              <SearchBar onSearch={handleSearch} />
+              <div className="sidebar-actions">
                 <button 
-                  className="export-btn" 
-                  onClick={() => openModal('export')}
-                  title="Export Notes"
-                >
-                  📤
-                </button>
-                <button 
-                  className="import-btn" 
-                  onClick={() => openModal('import')}
-                  title="Import Notes"
-                >
-                  📥
-                </button>
-                <button 
-                  className="backup-btn" 
-                  onClick={() => openModal('backup')}
-                  title="Backup & Restore"
-                >
-                  💾
-                </button>
-                <button 
-                  className="stats-btn" 
-                  onClick={() => openModal('statistics')}
-                  title="Statistics"
-                >
-                  📊
-                </button>
-                <button 
-                  className="new-note-btn"
+                  className="action-button"
                   onClick={() => openModal('createNote')}
+                  title="Create Note"
                 >
-                  ✏️
+                  +
+                </button>
+                <button 
+                  className="action-button"
+                  onClick={() => openModal('createCategory')}
+                  title="Create Category"
+                >
+                  📁
+                </button>
+              </div>
+            </div>
+            
+            <Sidebar 
+              categories={categories}
+              onCategorySelect={(category) => {
+                // Filter notes by category
+                const filteredNotes = notes.filter(note => note.category === category);
+                setNotes(filteredNotes);
+              }}
+              onCategoryDelete={showDeleteCategoryModal}
+            />
+          </div>
+          
+          <div className="main-area">
+            <div className="toolbar">
+              <div className="toolbar-left">
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('export')}
+                >
+                  Export
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('import')}
+                >
+                  Import
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('backup')}
+                >
+                  Backup
+                </button>
+                <button 
+                  className="toolbar-button"
+                  onClick={() => openModal('statistics')}
+                >
+                  Stats
                 </button>
               </div>
             </div>
@@ -261,6 +372,12 @@ function App() {
           onClose={() => closeModal('deleteCategory')}
           onConfirm={handleCategoryDelete}
           category={deleteCategoryData}
+        />
+
+        <ProfileModal 
+          isOpen={modals.profile}
+          onClose={() => closeModal('profile')}
+          onLogout={handleLogout}
         />
       </div>
     </Router>
