@@ -120,32 +120,44 @@ categorySchema.methods.updateNoteCount = async function() {
 
 // Static method to get user's categories with stats
 categorySchema.statics.getUserCategories = async function(userId, includeStats = true) {
-  const categories = await this.find({ 
-    userId, 
-    isActive: true 
-  })
-  .populate('parentCategory', 'name color')
-  .sort({ order: 1, name: 1 })
-  .lean();
+  try {
+    // Ensure userId is a valid ObjectId
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? mongoose.Types.ObjectId(userId) 
+      : userId;
 
-  if (includeStats) {
-    const Note = mongoose.model('Note');
-    const noteCounts = await Note.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId), isArchived: false } },
-      { $group: { _id: '$category', count: { $sum: 1 } } }
-    ]);
+    const categories = await this.find({ 
+      userId: userObjectId, 
+      isActive: true 
+    })
+    .populate('parentCategory', 'name color')
+    .sort({ order: 1, name: 1 })
+    .lean();
 
-    const countMap = {};
-    noteCounts.forEach(item => {
-      countMap[item._id.toString()] = item.count;
-    });
+    if (includeStats) {
+      const Note = mongoose.model('Note');
+      const noteCounts = await Note.aggregate([
+        { $match: { userId: userObjectId, isArchived: false } },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]);
 
-    categories.forEach(category => {
-      category.metadata.noteCount = countMap[category._id.toString()] || 0;
-    });
+      const countMap = {};
+      noteCounts.forEach(item => {
+        if (item._id) {
+          countMap[item._id.toString()] = item.count;
+        }
+      });
+
+      categories.forEach(category => {
+        category.metadata.noteCount = countMap[category._id.toString()] || 0;
+      });
+    }
+
+    return categories;
+  } catch (error) {
+    console.error('Error in getUserCategories:', error);
+    throw error;
   }
-
-  return categories;
 };
 
 // Static method to create default categories for new user
@@ -203,28 +215,38 @@ categorySchema.statics.createDefaultCategories = async function(userId) {
 
 // Static method to get category statistics
 categorySchema.statics.getUserCategoryStats = async function(userId) {
-  const stats = await this.aggregate([
-    { $match: { userId: mongoose.Types.ObjectId(userId), isActive: true } },
-    {
-      $lookup: {
-        from: 'notes',
-        localField: '_id',
-        foreignField: 'category',
-        as: 'notes'
-      }
-    },
-    {
-      $project: {
-        name: 1,
-        color: 1,
-        noteCount: { $size: '$notes' },
-        lastUsed: { $max: '$notes.updatedAt' }
-      }
-    },
-    { $sort: { noteCount: -1 } }
-  ]);
+  try {
+    // Ensure userId is a valid ObjectId
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? mongoose.Types.ObjectId(userId) 
+      : userId;
 
-  return stats;
+    const stats = await this.aggregate([
+      { $match: { userId: userObjectId, isActive: true } },
+      {
+        $lookup: {
+          from: 'notes',
+          localField: '_id',
+          foreignField: 'category',
+          as: 'notes'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          color: 1,
+          noteCount: { $size: '$notes' },
+          lastUsed: { $max: '$notes.updatedAt' }
+        }
+      },
+      { $sort: { noteCount: -1 } }
+    ]);
+
+    return stats;
+  } catch (error) {
+    console.error('Error in getUserCategoryStats:', error);
+    throw error;
+  }
 };
 
 // Static method to check if category name exists for user
