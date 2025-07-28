@@ -31,7 +31,7 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration - allow multiple origins
+// CORS configuration - allow all origins for development
 const allowedOrigins = [
   'http://localhost:8090',
   'http://localhost:8081',
