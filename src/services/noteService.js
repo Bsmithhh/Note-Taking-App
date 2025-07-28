@@ -14,6 +14,24 @@ import {
   validateImportData
 } from '../../js/export.js';
 
+// Get API URL from environment variable or use default
+const getApiBaseUrl = () => {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // In browser, check for environment variable or use default
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:3001/api'
+      : 'https://note-taking-app-production-7468.up.railway.app/api'; // Production Railway backend
+  }
+  // In Node.js environment (build time) - only access process.env if it exists
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+  }
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 // For now, we'll use the local storage functions
 // Later, these will be replaced with API calls
 
@@ -29,8 +47,8 @@ export const createNote = (title, content, category = '') => {
   return createNoteLocal(title, content, category);
 };
 
-export const editNote = (id, noteData) => {
-  return editNoteLocal(id, noteData);
+export const editNote = (id, title, content, category = '') => {
+  return editNoteLocal(id, title, content, category);
 };
 
 export const deleteNote = (id) => {
@@ -82,8 +100,6 @@ export const importNotes = (importedNotes, options = {}) => {
 
 // Future API integration functions (commented out for now)
 /*
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-
 export const getAllNotes = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/notes`);

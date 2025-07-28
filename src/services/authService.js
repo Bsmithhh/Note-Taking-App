@@ -10,8 +10,11 @@ const getApiBaseUrl = () => {
       ? 'http://localhost:3001/api'
       : 'https://note-taking-app-production-7468.up.railway.app/api'; // Production Railway backend
   }
-  // In Node.js environment (build time)
-  return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+  // In Node.js environment (build time) - only access process.env if it exists
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+  }
+  return 'http://localhost:3001/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
