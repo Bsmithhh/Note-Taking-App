@@ -224,32 +224,18 @@ function App() {
 
         <div className="app-container">
           {/* Sidebar */}
-          <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <div className="sidebar-header">
-              <h1 className="app-title">Bear Notes</h1>
-              <button 
-                className="add-note-btn"
-                onClick={() => openModal('createNote')}
-                title="Create Note"
-              >
-                +
-              </button>
-            </div>
-
-            <div className="search-container">
-              <SearchBar onSearch={handleSearch} />
-            </div>
-
-            <div className="notes-list">
-              <NotesList 
-                notes={displayNotes}
-                currentNote={currentNote}
-                onNoteSelect={handleNoteSelect}
-                onNoteDelete={handleNoteDelete}
-                isSearching={isSearching}
-              />
-            </div>
-          </div>
+          <Sidebar 
+            categories={categories}
+            onCategorySelect={(categoryName) => {
+              // Filter notes by category
+              const filteredNotes = notes.filter(note => note.category === categoryName);
+              setSearchResults(filteredNotes);
+              setIsSearching(true);
+              setSearchQuery(categoryName);
+            }}
+            onCategoryDelete={showDeleteCategoryModal}
+            onCreateCategory={handleCategoryCreate}
+          />
 
           {/* Sidebar Overlay for Mobile */}
           {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
@@ -259,6 +245,11 @@ function App() {
             {/* Toolbar */}
             <div className="toolbar">
               <div className="toolbar-left">
+                <div className="search-container">
+                  <SearchBar onSearch={handleSearch} searchQuery={searchQuery} isSearching={isSearching} />
+                </div>
+              </div>
+              <div className="toolbar-right">
                 <button 
                   className="toolbar-button"
                   onClick={() => openModal('export')}
@@ -287,16 +278,25 @@ function App() {
                 >
                   📊 Statistics
                 </button>
-              </div>
-              <div className="toolbar-right">
                 <button 
                   className="toolbar-button profile-btn"
                   onClick={() => openModal('profile')}
                   title="User Profile"
                 >
-                  👤 {user.username}
+                  👤 {user?.username || 'Guest'}
                 </button>
               </div>
+            </div>
+
+            {/* Notes List */}
+            <div className="notes-list-container">
+              <NotesList 
+                notes={displayNotes}
+                currentNote={currentNote}
+                onNoteSelect={handleNoteSelect}
+                onNoteDelete={handleNoteDelete}
+                isSearching={isSearching}
+              />
             </div>
 
             {/* Editor Container */}

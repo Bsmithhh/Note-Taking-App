@@ -11,8 +11,8 @@ import {
 // For now, we'll use the local storage functions
 // Later, these will be replaced with API calls
 
-export const fullTextSearch = (query) => {
-  return fullTextSearchLocal(query);
+export const fullTextSearch = (query, notes = null) => {
+  return fullTextSearchLocal(query, notes);
 };
 
 export const getSearchHistory = (limit = 10) => {
